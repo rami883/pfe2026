@@ -1,0 +1,63 @@
+:root {
+  --background: #f6f8fb;
+  --surface: #ffffff;
+  --text: #122033;
+  --text-soft: #5d6b7b;
+  --border: #dbe3ee;
+  --primary: #b91c1c;
+  --heading-font: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  --body-font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(185, 28, 28, 0.12), transparent 28%),
+    linear-gradient(180deg, #fbfcfe 0%, #eef3f8 100%);
+  font-family: var(--body-font);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2 {
+  color: var(--text);
+  font-family: var(--heading-font);
+}
+
+h1 {
+  margin: 0 0 16px;
+  font-size: clamp(2.3rem, 4vw, 3.7rem);
+  line-height: 1.1;
+}
+
+h2 {
+  font-size: 1.45rem;
+}
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+}
