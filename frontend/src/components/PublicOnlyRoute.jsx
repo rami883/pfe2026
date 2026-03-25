@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { roleHomePaths } from '../config/roles'
+import { normalizeRole, roleHomePaths } from '../config/roles'
 import FullScreenStatus from './FullScreenStatus'
 
 function PublicOnlyRoute({ children }) {
@@ -16,7 +16,7 @@ function PublicOnlyRoute({ children }) {
   }
 
   if (user) {
-    return <Navigate to={roleHomePaths[user.role] || '/login'} replace />
+    return <Navigate to={roleHomePaths[normalizeRole(user.role)] || '/login'} replace />
   }
 
   return children

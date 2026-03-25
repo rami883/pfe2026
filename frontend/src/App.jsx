@@ -28,9 +28,17 @@ function App() {
         }
       />
       <Route element={<ProtectedRoute allowedRole="directeur" />}>
+        <Route
+          path="/directeur"
+          element={<Navigate to="/directeur/dashboard" replace />}
+        />
         <Route path="/directeur/dashboard" element={<DirectorPlaceholderPage />} />
       </Route>
       <Route element={<ProtectedRoute allowedRole="gestionnaire" />}>
+        <Route
+          path="/gestionnaire-stock"
+          element={<Navigate to="/gestionnaire-stock/dashboard" replace />}
+        />
         <Route
           path="/gestionnaire-stock/dashboard"
           element={<StockManagerPlaceholderPage />}

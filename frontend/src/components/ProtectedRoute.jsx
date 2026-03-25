@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { roleHomePaths } from '../config/roles'
+import { normalizeRole, roleHomePaths } from '../config/roles'
 import FullScreenStatus from './FullScreenStatus'
 
 function ProtectedRoute({ allowedRole }) {
@@ -20,8 +20,8 @@ function ProtectedRoute({ allowedRole }) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to={roleHomePaths[user.role] || '/login'} replace />
+  if (allowedRole && normalizeRole(user.role) !== normalizeRole(allowedRole)) {
+    return <Navigate to={roleHomePaths[normalizeRole(user.role)] || '/login'} replace />
   }
 
   return <Outlet />

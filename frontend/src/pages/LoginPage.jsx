@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { roleHomePaths, roleOptions } from '../config/roles'
+import { normalizeRole, roleHomePaths, roleOptions } from '../config/roles'
 
 const initialFormState = {
   identifier: '',
@@ -61,7 +61,9 @@ function LoginPage() {
         role: formData.role,
       })
 
-      navigate(roleHomePaths[user.role] || '/login', { replace: true })
+      navigate(roleHomePaths[normalizeRole(user.role)] || '/login', {
+        replace: true,
+      })
     } catch (error) {
       setErrorMessage(
         error.message ||
