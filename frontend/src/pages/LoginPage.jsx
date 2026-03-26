@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
-import { normalizeRole, roleHomePaths, roleOptions } from '../config/roles'
+import { normalizeRole, roleHomePaths } from '../config/roles'
 
 const initialFormState = {
-  identifier: '',
+  email: '',
   password: '',
-  role: 'directeur',
 }
 
 function LoginPage() {
@@ -46,8 +45,8 @@ function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    if (!formData.identifier.trim() || !formData.password.trim()) {
-      setErrorMessage('Veuillez completer votre identifiant et votre mot de passe.')
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setErrorMessage('Veuillez completer votre email et votre mot de passe.')
       return
     }
 
@@ -56,9 +55,8 @@ function LoginPage() {
 
     try {
       const user = await login({
-        identifier: formData.identifier.trim(),
+        email: formData.email.trim(),
         password: formData.password,
-        role: formData.role,
       })
 
       navigate(roleHomePaths[normalizeRole(user.role)] || '/login', {
@@ -81,7 +79,7 @@ function LoginPage() {
           <div className="login-card__header">
             <span className="login-card__badge">Acces securise</span>
             <h2>Se connecter</h2>
-            <p>Connectez-vous pour acceder a votre espace selon votre role.</p>
+            <p>Connectez-vous pour acceder a votre espace.</p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
@@ -92,37 +90,14 @@ function LoginPage() {
             ) : null}
 
             <div className="field-group">
-              <label htmlFor="role">Role</label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              >
-                {roleOptions.map((role) => (
-                  <option key={role.value} value={role.value}>
-                    {role.label}
-                  </option>
-                ))}
-              </select>
-              <small className="field-hint">
-                {
-                  roleOptions.find((role) => role.value === formData.role)
-                    ?.description
-                }
-              </small>
-            </div>
-
-            <div className="field-group">
-              <label htmlFor="identifier">Identifiant ou email</label>
+              <label htmlFor="email">Email</label>
               <input
-                id="identifier"
-                name="identifier"
+                id="email"
+                name="email"
                 type="text"
-                placeholder="prenom.nom ou prenom.nom@yazaki-europe.com"
+                placeholder="prenom.nom@yazaki-europe.com"
                 autoComplete="username"
-                value={formData.identifier}
+                value={formData.email}
                 onChange={handleChange}
                 disabled={isSubmitting}
               />
