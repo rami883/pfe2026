@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import AdminProtectedRoute from './components/AdminProtectedRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicOnlyRoute from './components/PublicOnlyRoute'
 import DirectorPlaceholderPage from './pages/DirectorPlaceholderPage'
@@ -27,7 +28,7 @@ function App() {
           </PublicOnlyRoute>
         }
       />
-      <Route element={<ProtectedRoute allowedRole="directeur" />}>
+      <Route element={<AdminProtectedRoute />}>
         <Route
           path="/directeur"
           element={<Navigate to="/directeur/dashboard" replace />}

@@ -43,6 +43,10 @@ export function getRoleLabel(role) {
   return 'Role inconnu'
 }
 
+export function isAdminRole(role) {
+  return normalizeRole(role) === 'directeur'
+}
+
 export const roleHomePaths = {
   directeur: '/directeur/dashboard',
   gestionnaire: '/gestionnaire-stock/dashboard',
