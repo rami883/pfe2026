@@ -1,4 +1,13 @@
 import { useState } from 'react'
+import {
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Mail,
+  Shield,
+  User,
+  UserPlus,
+} from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { registerRequest } from '../api/authApi'
 import { roleOptions } from '../config/roles'
@@ -89,7 +98,10 @@ function RegisterForm() {
       <section className="login-panel">
         <div className="login-card register-card">
           <div className="login-card__header">
-            <span className="login-card__badge">Inscription</span>
+            <span className="login-card__badge">
+              <UserPlus size={16} aria-hidden="true" />
+              Inscription
+            </span>
             <h2>Creer un compte</h2>
             <p>
               Completez le formulaire pour creer un compte Directeur ou
@@ -100,7 +112,10 @@ function RegisterForm() {
           <form className="login-form" onSubmit={handleSubmit} noValidate>
             <div className="register-grid">
               <div className="field-group">
-                <label htmlFor="nom">Nom</label>
+                <label htmlFor="nom" className="field-label">
+                  <User size={16} aria-hidden="true" />
+                  Nom
+                </label>
                 <input
                   id="nom"
                   name="nom"
@@ -117,7 +132,10 @@ function RegisterForm() {
               </div>
 
               <div className="field-group">
-                <label htmlFor="prenom">Prenom</label>
+                <label htmlFor="prenom" className="field-label">
+                  <User size={16} aria-hidden="true" />
+                  Prenom
+                </label>
                 <input
                   id="prenom"
                   name="prenom"
@@ -135,7 +153,10 @@ function RegisterForm() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="role">Role</label>
+              <label htmlFor="role" className="field-label">
+                <Shield size={16} aria-hidden="true" />
+                Role
+              </label>
               <select
                 id="role"
                 name="role"
@@ -164,7 +185,10 @@ function RegisterForm() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="email">Email professionnel</label>
+              <label htmlFor="email" className="field-label">
+                <Mail size={16} aria-hidden="true" />
+                Email professionnel
+              </label>
               <input
                 id="email"
                 name="email"
@@ -183,7 +207,10 @@ function RegisterForm() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="password">Mot de passe</label>
+              <label htmlFor="password" className="field-label">
+                <LockKeyhole size={16} aria-hidden="true" />
+                Mot de passe
+              </label>
               <div className="password-field">
                 <input
                   id="password"
@@ -204,7 +231,14 @@ function RegisterForm() {
                       : 'Afficher le mot de passe'
                   }
                 >
-                  {isPasswordVisible ? 'Masquer' : 'Afficher'}
+                  <span className="button-content">
+                    {isPasswordVisible ? (
+                      <EyeOff size={16} aria-hidden="true" />
+                    ) : (
+                      <Eye size={16} aria-hidden="true" />
+                    )}
+                    {isPasswordVisible ? 'Masquer' : 'Afficher'}
+                  </span>
                 </button>
               </div>
               {errors.password ? (
@@ -215,7 +249,10 @@ function RegisterForm() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="confirmPassword">Confirmer le mot de passe</label>
+              <label htmlFor="confirmPassword" className="field-label">
+                <LockKeyhole size={16} aria-hidden="true" />
+                Confirmer le mot de passe
+              </label>
               <div className="password-field">
                 <input
                   id="confirmPassword"
@@ -238,7 +275,14 @@ function RegisterForm() {
                       : 'Afficher la confirmation du mot de passe'
                   }
                 >
-                  {isConfirmPasswordVisible ? 'Masquer' : 'Afficher'}
+                  <span className="button-content">
+                    {isConfirmPasswordVisible ? (
+                      <EyeOff size={16} aria-hidden="true" />
+                    ) : (
+                      <Eye size={16} aria-hidden="true" />
+                    )}
+                    {isConfirmPasswordVisible ? 'Masquer' : 'Afficher'}
+                  </span>
                 </button>
               </div>
               {errors.confirmPassword ? (
@@ -259,7 +303,10 @@ function RegisterForm() {
               className="primary-button primary-button--wide"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Creation en cours...' : 'Creer un compte'}
+              <span className="button-content">
+                <UserPlus size={16} aria-hidden="true" />
+                {isSubmitting ? 'Creation en cours...' : 'Creer un compte'}
+              </span>
             </button>
 
             <p className="auth-switch">

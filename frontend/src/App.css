@@ -49,6 +49,7 @@
 .portal-badge {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   width: fit-content;
   margin-bottom: 18px;
   padding: 8px 14px;
@@ -95,6 +96,12 @@
 .field-group label {
   font-weight: 700;
   color: var(--text);
+}
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .field-group input,
@@ -293,19 +300,44 @@
   letter-spacing: 0.06em;
 }
 
+.portal-card__label--with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .status-panel {
   position: relative;
   padding: 40px 32px;
 }
 
-.status-pulse {
+.status-icon {
   display: inline-flex;
-  width: 14px;
-  height: 14px;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   margin-bottom: 18px;
   border-radius: 999px;
   background: linear-gradient(135deg, #c81e1e, #ef4444);
+  color: #fff;
   box-shadow: 0 0 0 10px rgba(239, 68, 68, 0.12);
+}
+
+.status-icon--loading svg {
+  animation: spin 1s linear infinite;
+}
+
+.button-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {

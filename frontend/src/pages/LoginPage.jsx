@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Eye, EyeOff, LockKeyhole, LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { normalizeRole, roleHomePaths } from '../config/roles'
@@ -77,7 +78,10 @@ function LoginPage() {
       <section className="login-panel">
         <div className="login-card">
           <div className="login-card__header">
-            <span className="login-card__badge">Acces securise</span>
+            <span className="login-card__badge">
+              <ShieldCheck size={16} aria-hidden="true" />
+              Acces securise
+            </span>
             <h2>Se connecter</h2>
             <p>Connectez-vous pour acceder a votre espace.</p>
           </div>
@@ -90,7 +94,10 @@ function LoginPage() {
             ) : null}
 
             <div className="field-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email" className="field-label">
+                <Mail size={16} aria-hidden="true" />
+                Email
+              </label>
               <input
                 id="email"
                 name="email"
@@ -104,7 +111,10 @@ function LoginPage() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="password">Mot de passe</label>
+              <label htmlFor="password" className="field-label">
+                <LockKeyhole size={16} aria-hidden="true" />
+                Mot de passe
+              </label>
               <div className="password-field">
                 <input
                   id="password"
@@ -126,7 +136,14 @@ function LoginPage() {
                       : 'Afficher le mot de passe'
                   }
                 >
-                  {isPasswordVisible ? 'Masquer' : 'Afficher'}
+                  <span className="button-content">
+                    {isPasswordVisible ? (
+                      <EyeOff size={16} aria-hidden="true" />
+                    ) : (
+                      <Eye size={16} aria-hidden="true" />
+                    )}
+                    {isPasswordVisible ? 'Masquer' : 'Afficher'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -142,7 +159,10 @@ function LoginPage() {
               className="primary-button primary-button--wide"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
+              <span className="button-content">
+                <LogIn size={16} aria-hidden="true" />
+                {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
+              </span>
             </button>
 
             <p className="auth-switch">
