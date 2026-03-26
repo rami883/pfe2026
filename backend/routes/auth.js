@@ -3,15 +3,20 @@ import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import { protect, adminOnly } from "../middleware/auth.js";
 const router = express.Router();
+const ALLOWED_ROLES = new Set(["gestionnaire", "directeur"]);
 
 
 
 
 router.post("/register", async (req, res) => {
   const { username, email, password, role } = req.body;
+  const normalizedRole = String(role || "").trim().toLowerCase();
     try {
         if (!username || !email || !password|| !role) {
             return res.status(400).json({ message: "Please fill all the fields " });
+        }
+        if (!ALLOWED_ROLES.has(normalizedRole)) {
+            return res.status(400).json({ message: "Invalid role. Use gestionnaire or directeur." });
         }
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -22,7 +27,7 @@ router.post("/register", async (req, res) => {
 // this will create a new user in the database, 
 // the password will be hashed before saving 
 // it to the database because of the pre save hook we defined in the user model
-        const user = await User.create({username, email, password,role });
+        const user = await User.create({username, email, password, role: normalizedRole });
         const token = generateToken(user._id);
         res.status(201).json({
             id: user._id,

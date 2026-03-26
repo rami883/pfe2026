@@ -21,8 +21,8 @@ const userSchema = new mongoose.Schema({
     role: { 
         type: String, 
         required: true, 
-        enum: ['gestionnaire de stock', 'Administrateur'],
-        default: 'gestionnaire de stock'},
+        enum: ['gestionnaire', 'directeur'],
+        default: 'gestionnaire'},
     }, { // this will add createdAt and updatedAt fields to the schema
         timestamps: true });
 
