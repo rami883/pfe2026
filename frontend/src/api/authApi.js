@@ -40,10 +40,19 @@ function mapRoleToBackend(role) {
     .toLowerCase()
 
   if (normalizedRole === 'directeur' || normalizedRole === 'administrateur') {
-    return 'Administrateur'
+    return 'directeur'
   }
 
-  return 'gestionnaire de stock'
+  if (
+    normalizedRole === 'gestionnaire' ||
+    normalizedRole === 'gestionnaire-stock' ||
+    normalizedRole === 'gestionnaire_stock' ||
+    normalizedRole === 'gestionnaire de stock'
+  ) {
+    return 'gestionnaire'
+  }
+
+  return normalizedRole
 }
 
 function buildRegisterPayload(payload = {}) {
