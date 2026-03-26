@@ -14,6 +14,9 @@ export const roleOptions = [
 const ROLE_ALIASES = {
   directeur: 'directeur',
   gestionnaire: 'gestionnaire',
+  administrateur: 'directeur',
+  admin: 'directeur',
+  'gestionnaire de stock': 'gestionnaire',
   'gestionnaire-stock': 'gestionnaire',
   gestionnaire_stock: 'gestionnaire',
 }
