@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Eye, EyeOff, LockKeyhole, LogIn, Mail, ShieldCheck } from 'lucide-react'
+import { LockKeyhole, LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { normalizeRole, roleHomePaths } from '../config/roles'
@@ -41,6 +41,11 @@ function LoginPage() {
       ...currentData,
       [name]: value,
     }))
+  }
+
+  function handleTogglePasswordVisibility(event) {
+    event.preventDefault()
+    setIsPasswordVisible((current) => !current)
   }
 
   async function handleSubmit(event) {
@@ -129,19 +134,16 @@ function LoginPage() {
                 <button
                   type="button"
                   className="ghost-button"
-                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  onClick={handleTogglePasswordVisibility}
                   aria-label={
                     isPasswordVisible
                       ? 'Masquer le mot de passe'
                       : 'Afficher le mot de passe'
                   }
+                  aria-pressed={isPasswordVisible}
                 >
                   <span className="button-content">
-                    {isPasswordVisible ? (
-                      <EyeOff size={16} aria-hidden="true" />
-                    ) : (
-                      <Eye size={16} aria-hidden="true" />
-                    )}
+                    <LockKeyhole size={16} aria-hidden="true" />
                     {isPasswordVisible ? 'Masquer' : 'Afficher'}
                   </span>
                 </button>

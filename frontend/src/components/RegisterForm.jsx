@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import {
-  Eye,
-  EyeOff,
   LockKeyhole,
   Mail,
   Shield,
@@ -48,6 +46,16 @@ function RegisterForm() {
     if (globalMessage) {
       setGlobalMessage('')
     }
+  }
+
+  function handleTogglePasswordVisibility(event) {
+    event.preventDefault()
+    setIsPasswordVisible((current) => !current)
+  }
+
+  function handleToggleConfirmPasswordVisibility(event) {
+    event.preventDefault()
+    setIsConfirmPasswordVisible((current) => !current)
   }
 
   async function handleSubmit(event) {
@@ -224,19 +232,16 @@ function RegisterForm() {
                 <button
                   type="button"
                   className="ghost-button"
-                  onClick={() => setIsPasswordVisible((current) => !current)}
+                  onClick={handleTogglePasswordVisibility}
                   aria-label={
                     isPasswordVisible
                       ? 'Masquer le mot de passe'
                       : 'Afficher le mot de passe'
                   }
+                  aria-pressed={isPasswordVisible}
                 >
                   <span className="button-content">
-                    {isPasswordVisible ? (
-                      <EyeOff size={16} aria-hidden="true" />
-                    ) : (
-                      <Eye size={16} aria-hidden="true" />
-                    )}
+                    <LockKeyhole size={16} aria-hidden="true" />
                     {isPasswordVisible ? 'Masquer' : 'Afficher'}
                   </span>
                 </button>
@@ -266,21 +271,16 @@ function RegisterForm() {
                 <button
                   type="button"
                   className="ghost-button"
-                  onClick={() =>
-                    setIsConfirmPasswordVisible((current) => !current)
-                  }
+                  onClick={handleToggleConfirmPasswordVisibility}
                   aria-label={
                     isConfirmPasswordVisible
                       ? 'Masquer la confirmation du mot de passe'
                       : 'Afficher la confirmation du mot de passe'
                   }
+                  aria-pressed={isConfirmPasswordVisible}
                 >
                   <span className="button-content">
-                    {isConfirmPasswordVisible ? (
-                      <EyeOff size={16} aria-hidden="true" />
-                    ) : (
-                      <Eye size={16} aria-hidden="true" />
-                    )}
+                    <LockKeyhole size={16} aria-hidden="true" />
                     {isConfirmPasswordVisible ? 'Masquer' : 'Afficher'}
                   </span>
                 </button>
