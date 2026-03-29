@@ -10,11 +10,12 @@ import { Link, useNavigate } from 'react-router-dom'
 import { registerRequest } from '../api/authApi'
 import { roleOptions } from '../config/roles'
 import { validateRegisterForm } from '../utils/registerValidation'
+import { YAZAKI_EMAIL_SUFFIX } from '../utils/yazakiEmail'
 
 const initialFormState = {
   nom: '',
   prenom: '',
-  email: '',
+  identifier: '',
   role: 'directeur',
   password: '',
   confirmPassword: '',
@@ -31,10 +32,11 @@ function RegisterForm() {
 
   function handleChange(event) {
     const { name, value } = event.target
+    const nextValue = name === 'identifier' ? value.toLowerCase() : value
 
     setFormData((currentData) => ({
       ...currentData,
-      [name]: value,
+      [name]: nextValue,
     }))
 
     setErrors((currentErrors) => {
@@ -80,6 +82,14 @@ function RegisterForm() {
         },
       })
     } catch (error) {
+      if (!error.status) {
+        setGlobalMessage(
+          error.message ||
+            "Impossible de creer le compte pour le moment. Veuillez reessayer.",
+        )
+        return
+      }
+
       if (error.details) {
         setErrors((currentErrors) => ({
           ...currentErrors,
@@ -193,25 +203,35 @@ function RegisterForm() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="email" className="field-label">
+              <label htmlFor="identifier" className="field-label">
                 <Mail size={16} aria-hidden="true" />
-                Email professionnel
+                Identifiant professionnel
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="prenom.nom@yazaki-europe.com"
-                autoComplete="email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              />
-              {errors.email ? (
+              <div className="input-with-suffix">
+                <input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  placeholder="rami.bhk"
+                  autoComplete="username"
+                  value={formData.identifier}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+                <span className="input-suffix" aria-hidden="true">
+                  {YAZAKI_EMAIL_SUFFIX}
+                </span>
+              </div>
+              {errors.identifier ? (
                 <p className="field-error" role="alert">
-                  {errors.email}
+                  {errors.identifier}
                 </p>
-              ) : null}
+              ) : (
+                <small className="field-hint">
+                  Saisissez uniquement la partie avant @. Le domaine est ajoute
+                  automatiquement.
+                </small>
+              )}
             </div>
 
             <div className="field-group">

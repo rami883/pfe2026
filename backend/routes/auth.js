@@ -2,6 +2,10 @@ import express from "express";
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import { protect, adminOnly } from "../middleware/auth.js";
+import {
+  getYazakiIdentifierErrorMessage,
+  normalizeYazakiIdentifierInput,
+} from "../utils/yazakiEmail.js";
 const router = express.Router();
 const ALLOWED_ROLES = new Set(["gestionnaire", "directeur"]);
 
@@ -9,25 +13,50 @@ const ALLOWED_ROLES = new Set(["gestionnaire", "directeur"]);
 
 
 router.post("/register", async (req, res) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, identifier, password, role } = req.body;
   const normalizedRole = String(role || "").trim().toLowerCase();
+  const normalizedUsername = String(username || "").trim();
+  const hasIdentifierField = Object.prototype.hasOwnProperty.call(
+    req.body,
+    "identifier",
+  );
+  const emailSource = hasIdentifierField ? identifier : email;
+
     try {
-        if (!username || !email || !password|| !role) {
-            return res.status(400).json({ message: "Please fill all the fields " });
+        if (!normalizedUsername || !password || !role || !emailSource) {
+            return res.status(400).json({ message: "Veuillez completer tous les champs obligatoires." });
         }
         if (!ALLOWED_ROLES.has(normalizedRole)) {
-            return res.status(400).json({ message: "Invalid role. Use gestionnaire or directeur." });
+            return res.status(400).json({ message: "Role invalide. Utilisez gestionnaire ou directeur." });
         }
-        const userExists = await User.findOne({ email });
+
+        const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
+          allowFullEmail: !hasIdentifierField,
+        });
+        if (!normalizedIdentifier.ok) {
+          return res.status(400).json({
+            message: getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
+              allowFullEmail: !hasIdentifierField,
+            }),
+          });
+        }
+
+        const normalizedEmail = normalizedIdentifier.email;
+        const userExists = await User.findOne({ email: normalizedEmail });
         if (userExists) {
             return res
                 .status(400)
-                .json({ message: "User already exists with this email" });
+                .json({ message: "Un compte existe deja avec cet email." });
         }
 // this will create a new user in the database, 
 // the password will be hashed before saving 
 // it to the database because of the pre save hook we defined in the user model
-        const user = await User.create({username, email, password, role: normalizedRole });
+        const user = await User.create({
+          username: normalizedUsername,
+          email: normalizedEmail,
+          password,
+          role: normalizedRole,
+        });
         const token = generateToken(user._id);
         res.status(201).json({
             id: user._id,
@@ -47,19 +76,32 @@ router.post("/register", async (req, res) => {
 // it will check if the email and password 
 // are correct and return the user data if they are correct
 router.post("/login", async (req, res) => {
-const { email, password } = req.body;
+const { email, identifier, password } = req.body;
 try {
-    if ( !email || !password) {
+    const emailSource = identifier || email;
+    if ( !emailSource || !password) {
         return res
             .status(400)
-            .json({ message: "Please fill all the fields" });
+            .json({ message: "Veuillez completer tous les champs obligatoires." });
     }
-    const user = await User.findOne({ email });
+
+    const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
+      allowFullEmail: true,
+    });
+    if (!normalizedIdentifier.ok) {
+      return res.status(400).json({
+        message: getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
+          allowFullEmail: true,
+        }),
+      });
+    }
+
+    const user = await User.findOne({ email: normalizedIdentifier.email });
 
     if (!user || !(await user.matchPassword(password))) {
         return res
             .status(401)
-            .json({ message: "Invalid credentials" });
+            .json({ message: "Identifiants invalides." });
     }
     // if the email and password are correct, 
     // we will return the user data, 

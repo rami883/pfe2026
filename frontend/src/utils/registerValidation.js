@@ -1,29 +1,15 @@
-const COMPANY_DOMAIN = 'yazaki-europe.com'
+import {
+  getYazakiIdentifierErrorMessage,
+  normalizeYazakiIdentifierInput,
+} from './yazakiEmail'
 const ALLOWED_ROLES = new Set(['directeur', 'gestionnaire'])
 
 function normalizeText(value) {
   return value?.trim() || ''
 }
 
-function normalizeEmail(value) {
-  return normalizeText(value).toLowerCase()
-}
-
 function isValidName(value) {
   return /^[A-Za-z][A-Za-z '-]{1,49}$/.test(value)
-}
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
-function isProfessionalEmail(email) {
-  const domain = email.split('@')[1]
-  if (!domain) {
-    return false
-  }
-
-  return domain === COMPANY_DOMAIN
 }
 
 function isStrongPassword(password) {
@@ -34,7 +20,7 @@ export function validateRegisterForm(values = {}) {
   const normalizedValues = {
     nom: normalizeText(values.nom),
     prenom: normalizeText(values.prenom),
-    email: normalizeEmail(values.email),
+    identifier: normalizeText(values.identifier).toLowerCase(),
     role: normalizeText(values.role).toLowerCase(),
     password: values.password || '',
     confirmPassword: values.confirmPassword || '',
@@ -54,12 +40,14 @@ export function validateRegisterForm(values = {}) {
     errors.prenom = 'Le prenom est invalide.'
   }
 
-  if (!normalizedValues.email) {
-    errors.email = "L'email professionnel est requis."
-  } else if (!isValidEmail(normalizedValues.email)) {
-    errors.email = "Le format de l'email est invalide."
-  } else if (!isProfessionalEmail(normalizedValues.email)) {
-    errors.email = "L'email doit se terminer par @yazaki-europe.com."
+  const normalizedIdentifier = normalizeYazakiIdentifierInput(
+    normalizedValues.identifier,
+    { allowFullEmail: false },
+  )
+  if (!normalizedIdentifier.ok) {
+    errors.identifier = getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
+      allowFullEmail: false,
+    })
   }
 
   if (!normalizedValues.role) {
@@ -82,7 +70,11 @@ export function validateRegisterForm(values = {}) {
   }
 
   return {
-    values: normalizedValues,
+    values: {
+      ...normalizedValues,
+      identifier: normalizedIdentifier.ok ? normalizedIdentifier.identifier : '',
+      email: normalizedIdentifier.ok ? normalizedIdentifier.email : '',
+    },
     errors,
     isValid: Object.keys(errors).length === 0,
   }

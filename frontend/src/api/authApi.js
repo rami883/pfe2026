@@ -1,3 +1,8 @@
+import {
+  getYazakiIdentifierErrorMessage,
+  normalizeYazakiIdentifierInput,
+} from '../utils/yazakiEmail'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
 const AUTH_TOKEN_STORAGE_KEY = 'pfe_auth_token'
 
@@ -59,24 +64,45 @@ function buildRegisterPayload(payload = {}) {
   const firstName = String(payload.prenom || '').trim()
   const lastName = String(payload.nom || '').trim()
   const computedUsername = `${firstName} ${lastName}`.trim()
+  const normalizedIdentifier = normalizeYazakiIdentifierInput(
+    payload.identifier || payload.email || '',
+    { allowFullEmail: false },
+  )
+
+  if (!normalizedIdentifier.ok) {
+    throw new Error(
+      getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
+        allowFullEmail: false,
+      }),
+    )
+  }
 
   return {
     username: String(payload.username || computedUsername).trim(),
-    email: String(payload.email || '')
-      .trim()
-      .toLowerCase(),
+    email: normalizedIdentifier.email,
+    identifier: normalizedIdentifier.identifier,
     password: payload.password || '',
     role: mapRoleToBackend(payload.role),
   }
 }
 
 function buildLoginPayload(payload = {}) {
-  const email = String(payload.email || payload.identifier || '')
-    .trim()
-    .toLowerCase()
+  const normalizedIdentifier = normalizeYazakiIdentifierInput(
+    payload.identifier || payload.email || '',
+    { allowFullEmail: true },
+  )
+
+  if (!normalizedIdentifier.ok) {
+    throw new Error(
+      getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
+        allowFullEmail: true,
+      }),
+    )
+  }
 
   return {
-    email,
+    email: normalizedIdentifier.email,
+    identifier: normalizedIdentifier.identifier,
     password: payload.password || '',
   }
 }
