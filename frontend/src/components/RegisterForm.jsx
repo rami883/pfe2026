@@ -72,11 +72,12 @@ function RegisterForm() {
     setIsSubmitting(true)
 
     try {
+      //this will throw if registration fails, which is expected for error handling
       await registerRequest(validation.values)
       navigate('/login', {
         replace: true,
         state: {
-          successMessage: 'Compte cree avec succes. Connectez-vous pour continuer.',
+          successMessage: 'Votre demande d\'inscription a été envoyée à l\'administrateur. Veuillez attendre sa confirmation pour vous connecter.',
         },
       })
     } catch (error) {

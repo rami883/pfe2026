@@ -6,6 +6,8 @@ import FullScreenStatus from './FullScreenStatus'
 function AdminProtectedRoute() {
   const { authReady, user } = useAuth()
   const location = useLocation()
+  
+  console.log('AdminProtectedRoute: user=', user, 'authReady=', authReady)
 
   if (!authReady) {
     return (
@@ -20,10 +22,14 @@ function AdminProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
+  // Check if user has admin role
   if (!isAdminRole(user.role)) {
-    return <Navigate to={roleHomePaths[normalizeRole(user.role)] || '/login'} replace />
+    console.log('User is not admin, role:', user.role)
+    const redirectPath = roleHomePaths[normalizeRole(user.role)] || '/login'
+    return <Navigate to={redirectPath} replace />
   }
 
+  console.log('Admin access granted for user:', user.username)
   return <Outlet />
 }
 

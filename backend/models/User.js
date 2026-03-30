@@ -21,8 +21,18 @@ const userSchema = new mongoose.Schema({
     role: { 
         type: String, 
         required: true, 
-        enum: ['gestionnaire', 'directeur'],
-        default: 'gestionnaire'},
+        enum: ['gestionnaire', 'directeur' , 'admin'],
+        default: 'gestionnaire'
+    },
+    // this field will be used to know if the user is approved 
+    // by the admin or not, if it is not approved, 
+    // the user will not be able to login
+     isApproved: {
+        type: Boolean,
+        default: function () {
+            return this.role === "admin";
+  }
+}
     }, { // this will add createdAt and updatedAt fields to the schema
         timestamps: true });
 

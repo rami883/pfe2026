@@ -67,6 +67,7 @@ function buildRegisterPayload(payload = {}) {
       .toLowerCase(),
     password: payload.password || '',
     role: mapRoleToBackend(payload.role),
+    isApproved: false, // new users should not be approved by default
   }
 }
 
@@ -81,7 +82,7 @@ function buildLoginPayload(payload = {}) {
   }
 }
 
-async function apiRequest(path, options = {}) {
+export async function apiRequest(path, options = {}) {
   const token = getStoredToken()
   const config = {
     credentials: 'include',

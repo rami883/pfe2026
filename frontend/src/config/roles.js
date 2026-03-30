@@ -10,17 +10,14 @@ export const roleOptions = [
     description: 'Suivi des stocks, coordination logistique et disponibilites.',
   },
 ]
-
+//
 const ROLE_ALIASES = {
   directeur: 'directeur',
   gestionnaire: 'gestionnaire',
-  administrateur: 'directeur',
-  admin: 'directeur',
-  'gestionnaire de stock': 'gestionnaire',
-  'gestionnaire-stock': 'gestionnaire',
-  gestionnaire_stock: 'gestionnaire',
+  admin: 'admin',
+  administrateur: 'admin',
 }
-
+// This file will contain all the roles related functions and constants
 export function normalizeRole(role) {
   const normalized = String(role || '')
     .trim()
@@ -30,8 +27,11 @@ export function normalizeRole(role) {
 }
 
 export function getRoleLabel(role) {
+  // This function will return the label of the role, 
+  // it will be used to display the role in the UI
   const normalizedRole = normalizeRole(role)
-
+ if (normalizedRole === 'admin') {
+    return 'admin'}
   if (normalizedRole === 'directeur') {
     return 'Directeur'
   }
@@ -44,12 +44,11 @@ export function getRoleLabel(role) {
 }
 
 export function isAdminRole(role) {
-  return normalizeRole(role) === 'directeur'
+  return normalizeRole(role) === 'admin'
 }
 
 export const roleHomePaths = {
+  admin: '/admin/dashboard',
   directeur: '/directeur/dashboard',
   gestionnaire: '/gestionnaire-stock/dashboard',
-  'gestionnaire-stock': '/gestionnaire-stock/dashboard',
-  gestionnaire_stock: '/gestionnaire-stock/dashboard',
 }
