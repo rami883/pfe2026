@@ -3,9 +3,10 @@ import { LockKeyhole, LogIn, Mail, ShieldCheck } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
 import { normalizeRole, roleHomePaths } from '../config/roles'
+import { YAZAKI_EMAIL_SUFFIX } from '../utils/yazakiEmail'
 
 const initialFormState = {
-  email: '',
+  identifier: '',
   password: '',
 }
 
@@ -28,6 +29,7 @@ function LoginPage() {
 
   function handleChange(event) {
     const { name, value } = event.target
+    const nextValue = name === 'identifier' ? value.toLowerCase() : value
 
     if (errorMessage) {
       setErrorMessage('')
@@ -39,7 +41,7 @@ function LoginPage() {
 
     setFormData((currentData) => ({
       ...currentData,
-      [name]: value,
+      [name]: nextValue,
     }))
   }
 
@@ -51,8 +53,10 @@ function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
 
-    if (!formData.email.trim() || !formData.password.trim()) {
-      setErrorMessage('Veuillez completer votre email et votre mot de passe.')
+    if (!formData.identifier.trim() || !formData.password.trim()) {
+      setErrorMessage(
+        'Veuillez completer votre identifiant professionnel et votre mot de passe.',
+      )
       return
     }
 
@@ -61,7 +65,7 @@ function LoginPage() {
 
     try {
       const user = await login({
-        email: formData.email.trim(),
+        identifier: formData.identifier.trim(),
         password: formData.password,
       })
 
@@ -99,20 +103,28 @@ function LoginPage() {
             ) : null}
 
             <div className="field-group">
-              <label htmlFor="email" className="field-label">
+              <label htmlFor="identifier" className="field-label">
                 <Mail size={16} aria-hidden="true" />
-                Email
+                Identifiant professionnel
               </label>
-              <input
-                id="email"
-                name="email"
-                type="text"
-                placeholder="prenom.nom@yazaki-europe.com"
-                autoComplete="username"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isSubmitting}
-              />
+              <div className="input-with-suffix">
+                <input
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  placeholder="rami.bhk"
+                  autoComplete="username"
+                  value={formData.identifier}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                />
+                <span className="input-suffix" aria-hidden="true">
+                  {YAZAKI_EMAIL_SUFFIX}
+                </span>
+              </div>
+              <small className="field-hint">
+                Vous pouvez aussi saisir l&apos;adresse complete Yazaki.
+              </small>
             </div>
 
             <div className="field-group">
