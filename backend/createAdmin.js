@@ -8,7 +8,7 @@ const createAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
 
-    const email = "admin@yazaki.com";
+    const email = "admin@yazaki-europe.com";
 
     const existing = await User.findOne({ email });
 
