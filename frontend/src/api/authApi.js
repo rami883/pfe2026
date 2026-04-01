@@ -48,6 +48,10 @@ function mapRoleToBackend(role) {
     return 'directeur'
   }
 
+  if (normalizedRole === 'admin') {
+    return 'admin'
+  }
+
   if (
     normalizedRole === 'gestionnaire' ||
     normalizedRole === 'gestionnaire-stock' ||
@@ -172,4 +176,22 @@ export function getCurrentUserRequest() {
   return apiRequest('/api/users/me').then((data) => ({
     user: normalizeUserPayload(data),
   }))
+}
+
+export function getPendingUsersRequest() {
+  return apiRequest('/api/users/pending').then((data) => ({
+    users: Array.isArray(data?.users) ? data.users : [],
+  }))
+}
+
+export function approvePendingUserRequest(userId) {
+  return apiRequest(`/api/users/pending/${userId}/approve`, {
+    method: 'PATCH',
+  })
+}
+
+export function rejectPendingUserRequest(userId) {
+  return apiRequest(`/api/users/pending/${userId}/reject`, {
+    method: 'PATCH',
+  })
 }

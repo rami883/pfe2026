@@ -12,10 +12,10 @@ export const roleOptions = [
 ]
 
 const ROLE_ALIASES = {
+  admin: 'admin',
+  administrateur: 'admin',
   directeur: 'directeur',
   gestionnaire: 'gestionnaire',
-  administrateur: 'directeur',
-  admin: 'directeur',
   'gestionnaire de stock': 'gestionnaire',
   'gestionnaire-stock': 'gestionnaire',
   gestionnaire_stock: 'gestionnaire',
@@ -40,14 +40,20 @@ export function getRoleLabel(role) {
     return 'Gestionnaire de stock'
   }
 
+  if (normalizedRole === 'admin') {
+    return 'Administrateur'
+  }
+
   return 'Role inconnu'
 }
 
 export function isAdminRole(role) {
-  return normalizeRole(role) === 'directeur'
+  return normalizeRole(role) === 'admin'
 }
 
 export const roleHomePaths = {
+  admin: '/admin/approvals',
+  administrateur: '/admin/approvals',
   directeur: '/directeur/dashboard',
   gestionnaire: '/gestionnaire-stock/dashboard',
   'gestionnaire-stock': '/gestionnaire-stock/dashboard',

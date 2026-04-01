@@ -1,16 +1,41 @@
 import express from "express";
-import User from "../models/User.js";
 import jwt from "jsonwebtoken";
+import User from "../models/User.js";
 import { protect, adminOnly } from "../middleware/auth.js";
 import {
   getYazakiIdentifierErrorMessage,
   normalizeYazakiIdentifierInput,
 } from "../utils/yazakiEmail.js";
+
 const router = express.Router();
-const ALLOWED_ROLES = new Set(["gestionnaire", "directeur"]);
 
+const ALLOWED_REGISTER_ROLES = new Set(["gestionnaire", "directeur"]);
 
+function buildUserPayload(user) {
+  return {
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isApproved: Boolean(user.isApproved),
+    isRejected: Boolean(user.isRejected),
+  };
+}
 
+function generateToken(id) {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+}
+
+async function findApprovableUserById(userId) {
+  if (!userId) {
+    return null;
+  }
+
+  return User.findOne({
+    _id: userId,
+    role: { $in: Array.from(ALLOWED_REGISTER_ROLES) },
+  });
+}
 
 router.post("/register", async (req, res) => {
   const { username, email, identifier, password, role } = req.body;
@@ -22,67 +47,67 @@ router.post("/register", async (req, res) => {
   );
   const emailSource = hasIdentifierField ? identifier : email;
 
-    try {
-        if (!normalizedUsername || !password || !role || !emailSource) {
-            return res.status(400).json({ message: "Veuillez completer tous les champs obligatoires." });
-        }
-        if (!ALLOWED_ROLES.has(normalizedRole)) {
-            return res.status(400).json({ message: "Role invalide. Utilisez gestionnaire ou directeur." });
-        }
+  try {
+    if (!normalizedUsername || !password || !role || !emailSource) {
+      return res
+        .status(400)
+        .json({ message: "Veuillez completer tous les champs obligatoires." });
+    }
 
-        const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
+    if (!ALLOWED_REGISTER_ROLES.has(normalizedRole)) {
+      return res
+        .status(400)
+        .json({ message: "Role invalide. Utilisez gestionnaire ou directeur." });
+    }
+
+    const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
+      allowFullEmail: !hasIdentifierField,
+    });
+    if (!normalizedIdentifier.ok) {
+      return res.status(400).json({
+        message: getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
           allowFullEmail: !hasIdentifierField,
-        });
-        if (!normalizedIdentifier.ok) {
-          return res.status(400).json({
-            message: getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
-              allowFullEmail: !hasIdentifierField,
-            }),
-          });
-        }
+        }),
+      });
+    }
 
-        const normalizedEmail = normalizedIdentifier.email;
-        const userExists = await User.findOne({ email: normalizedEmail });
-        if (userExists) {
-            return res
-                .status(400)
-                .json({ message: "Un compte existe deja avec cet email." });
-        }
-// this will create a new user in the database, 
-// the password will be hashed before saving 
-// it to the database because of the pre save hook we defined in the user model
-        const user = await User.create({
-          username: normalizedUsername,
-          email: normalizedEmail,
-          password,
-          role: normalizedRole,
-        });
-        const token = generateToken(user._id);
-        res.status(201).json({
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            role: user.role,
-            token,
+    const normalizedEmail = normalizedIdentifier.email;
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) {
+      return res
+        .status(400)
+        .json({ message: "Un compte existe deja avec cet email." });
+    }
+
+    const user = await User.create({
+      username: normalizedUsername,
+      email: normalizedEmail,
+      password,
+      role: normalizedRole,
+      isApproved: false,
+      isRejected: false,
+    });
+
+    return res.status(201).json({
+      message:
+        "Inscription enregistree. Votre compte doit etre approuve par un administrateur.",
+      user: buildUserPayload(user),
     });
   } catch (error) {
-   
-    console.error("Registration Error: ", error); 
-    res.status(500).json({ message: "Server error" });
-
-        }
+    console.error("Registration Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
 });
-// this route will be used to login a user, 
-// it will check if the email and password 
-// are correct and return the user data if they are correct
+
 router.post("/login", async (req, res) => {
-const { email, identifier, password } = req.body;
-try {
-    const emailSource = identifier || email;
-    if ( !emailSource || !password) {
-        return res
-            .status(400)
-            .json({ message: "Veuillez completer tous les champs obligatoires." });
+  const { email, identifier, password } = req.body;
+  const emailSource = identifier || email;
+
+  try {
+    if (!emailSource || !password) {
+      return res
+        .status(400)
+        .json({ message: "Veuillez completer tous les champs obligatoires." });
     }
 
     const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
@@ -97,43 +122,102 @@ try {
     }
 
     const user = await User.findOne({ email: normalizedIdentifier.email });
-
     if (!user || !(await user.matchPassword(password))) {
-        return res
-            .status(401)
-            .json({ message: "Identifiants invalides." });
+      return res.status(401).json({ message: "Identifiants invalides." });
     }
-    // if the email and password are correct, 
-    // we will return the user data, 
-    // you can also return a token here if you want to implement
-    //  authentication with tokens
+
+    if (user.role !== "admin") {
+      if (user.isRejected === true) {
+        return res.status(403).json({
+          message:
+            "Votre compte a ete rejete. Contactez un administrateur pour plus d'informations.",
+        });
+      }
+
+      if (user.isApproved === false) {
+        return res.status(403).json({
+          message:
+            "Votre compte est en attente de validation par un administrateur.",
+        });
+      }
+    }
+
     const token = generateToken(user._id);
-    res.status(200).json({
-    id: user._id,
-    username: user.username,
-     email: user.email,
-     role: user.role,
-        token,
+    return res.status(200).json({
+      ...buildUserPayload(user),
+      token,
     });
-
- } 
-catch (error) {
-    res.status(500).json({ message: "Server error" });
- }
-})
-// this route will be used to get the user data,
-router.get("/me", protect , async (req, res) => {
-  res.status(200).json( req.user);
-// this route will be used to test if the user is an admin or not,
-
-  router.get("/admin-data", protect, adminOnly, (req, res) => {
-  res.json({ message: "Admin content" });
+  } catch (error) {
+    console.error("Login Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
 });
 
+router.get("/me", protect, async (req, res) => {
+  return res.status(200).json(req.user);
 });
-//Generate JWT token
-const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, {expiresIn: "30d" })
 
-}
- export default router;
+router.get("/admin-data", protect, adminOnly, (req, res) => {
+  return res.json({ message: "Admin content" });
+});
+
+router.get("/pending", protect, adminOnly, async (_req, res) => {
+  try {
+    const users = await User.find({
+      role: { $in: Array.from(ALLOWED_REGISTER_ROLES) },
+      isApproved: false,
+      isRejected: false,
+    })
+      .select("-password")
+      .sort({ createdAt: 1 });
+
+    return res.status(200).json({ users });
+  } catch (error) {
+    console.error("Fetch Pending Users Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+router.patch("/pending/:userId/approve", protect, adminOnly, async (req, res) => {
+  try {
+    const user = await findApprovableUserById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    user.isApproved = true;
+    user.isRejected = false;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Utilisateur approuve avec succes.",
+      user: buildUserPayload(user),
+    });
+  } catch (error) {
+    console.error("Approve User Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+router.patch("/pending/:userId/reject", protect, adminOnly, async (req, res) => {
+  try {
+    const user = await findApprovableUserById(req.params.userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    user.isApproved = false;
+    user.isRejected = true;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Utilisateur rejete avec succes.",
+      user: buildUserPayload(user),
+    });
+  } catch (error) {
+    console.error("Reject User Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+export default router;

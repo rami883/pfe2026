@@ -309,6 +309,50 @@
   gap: 18px;
 }
 
+.approval-card {
+  width: min(100%, 820px);
+}
+
+.approval-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.approval-list {
+  display: grid;
+  gap: 14px;
+}
+
+.approval-item {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.approval-item__details {
+  display: grid;
+  gap: 8px;
+}
+
+.approval-item__line {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.approval-item__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .portal-card__row {
   display: flex;
   align-items: center;
@@ -386,6 +430,11 @@
   .portal-card,
   .status-panel {
     padding: 24px;
+  }
+
+  .approval-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

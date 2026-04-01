@@ -23,8 +23,16 @@ const userSchema = new mongoose.Schema({
     role: { 
         type: String, 
         required: true, 
-        enum: ['gestionnaire', 'directeur'],
+        enum: ['gestionnaire', 'directeur', 'admin'],
         default: 'gestionnaire'},
+    isApproved: {
+        type: Boolean,
+        default: false,
+    },
+    isRejected: {
+        type: Boolean,
+        default: false,
+    },
     }, { // this will add createdAt and updatedAt fields to the schema
         timestamps: true });
 

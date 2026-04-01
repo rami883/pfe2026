@@ -3,6 +3,7 @@ import './App.css'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicOnlyRoute from './components/PublicOnlyRoute'
+import AdminApprovalsPage from './pages/AdminApprovalsPage'
 import DirectorPlaceholderPage from './pages/DirectorPlaceholderPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
@@ -28,12 +29,16 @@ function App() {
           </PublicOnlyRoute>
         }
       />
-      <Route element={<AdminProtectedRoute />}>
+      <Route element={<ProtectedRoute allowedRole="directeur" />}>
         <Route
           path="/directeur"
           element={<Navigate to="/directeur/dashboard" replace />}
         />
         <Route path="/directeur/dashboard" element={<DirectorPlaceholderPage />} />
+      </Route>
+      <Route element={<AdminProtectedRoute />}>
+        <Route path="/admin" element={<Navigate to="/admin/approvals" replace />} />
+        <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
       </Route>
       <Route element={<ProtectedRoute allowedRole="gestionnaire" />}>
         <Route
