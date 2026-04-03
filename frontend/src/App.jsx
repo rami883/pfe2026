@@ -29,6 +29,16 @@ function App() {
           </PublicOnlyRoute>
         }
       />
+
+      <Route element={<AdminProtectedRoute />}>
+        <Route path="/admin" element={<Navigate to="/admin/approvals" replace />} />
+        <Route
+          path="/admin/dashboard"
+          element={<Navigate to="/admin/approvals" replace />}
+        />
+        <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
+      </Route>
+
       <Route element={<ProtectedRoute allowedRole="directeur" />}>
         <Route
           path="/directeur"
@@ -36,10 +46,7 @@ function App() {
         />
         <Route path="/directeur/dashboard" element={<DirectorPlaceholderPage />} />
       </Route>
-      <Route element={<AdminProtectedRoute />}>
-        <Route path="/admin" element={<Navigate to="/admin/approvals" replace />} />
-        <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
-      </Route>
+
       <Route element={<ProtectedRoute allowedRole="gestionnaire" />}>
         <Route
           path="/gestionnaire-stock"
@@ -50,6 +57,7 @@ function App() {
           element={<StockManagerPlaceholderPage />}
         />
       </Route>
+
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

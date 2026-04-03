@@ -1,7 +1,7 @@
 import express from "express";
 import jwt from "jsonwebtoken";
+import { adminOnly, protect } from "../middleware/auth.js";
 import User from "../models/User.js";
-import { protect, adminOnly } from "../middleware/auth.js";
 import {
   getYazakiIdentifierErrorMessage,
   normalizeYazakiIdentifierInput,
@@ -39,8 +39,8 @@ async function findApprovableUserById(userId) {
 
 router.post("/register", async (req, res) => {
   const { username, email, identifier, password, role } = req.body;
-  const normalizedRole = String(role || "").trim().toLowerCase();
   const normalizedUsername = String(username || "").trim();
+  const normalizedRole = String(role || "").trim().toLowerCase();
   const hasIdentifierField = Object.prototype.hasOwnProperty.call(
     req.body,
     "identifier",
@@ -48,7 +48,7 @@ router.post("/register", async (req, res) => {
   const emailSource = hasIdentifierField ? identifier : email;
 
   try {
-    if (!normalizedUsername || !password || !role || !emailSource) {
+    if (!normalizedUsername || !password || !normalizedRole || !emailSource) {
       return res
         .status(400)
         .json({ message: "Veuillez completer tous les champs obligatoires." });
@@ -63,6 +63,7 @@ router.post("/register", async (req, res) => {
     const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
       allowFullEmail: !hasIdentifierField,
     });
+
     if (!normalizedIdentifier.ok) {
       return res.status(400).json({
         message: getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
@@ -73,6 +74,7 @@ router.post("/register", async (req, res) => {
 
     const normalizedEmail = normalizedIdentifier.email;
     const existingUser = await User.findOne({ email: normalizedEmail });
+
     if (existingUser) {
       return res
         .status(400)
@@ -113,6 +115,7 @@ router.post("/login", async (req, res) => {
     const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
       allowFullEmail: true,
     });
+
     if (!normalizedIdentifier.ok) {
       return res.status(400).json({
         message: getYazakiIdentifierErrorMessage(normalizedIdentifier.code, {
@@ -122,19 +125,20 @@ router.post("/login", async (req, res) => {
     }
 
     const user = await User.findOne({ email: normalizedIdentifier.email });
+
     if (!user || !(await user.matchPassword(password))) {
       return res.status(401).json({ message: "Identifiants invalides." });
     }
 
     if (user.role !== "admin") {
-      if (user.isRejected === true) {
+      if (user.isRejected) {
         return res.status(403).json({
           message:
             "Votre compte a ete rejete. Contactez un administrateur pour plus d'informations.",
         });
       }
 
-      if (user.isApproved === false) {
+      if (!user.isApproved) {
         return res.status(403).json({
           message:
             "Votre compte est en attente de validation par un administrateur.",
@@ -142,10 +146,9 @@ router.post("/login", async (req, res) => {
       }
     }
 
-    const token = generateToken(user._id);
     return res.status(200).json({
       ...buildUserPayload(user),
-      token,
+      token: generateToken(user._id),
     });
   } catch (error) {
     console.error("Login Error:", error);
@@ -157,7 +160,7 @@ router.get("/me", protect, async (req, res) => {
   return res.status(200).json(req.user);
 });
 
-router.get("/admin-data", protect, adminOnly, (req, res) => {
+router.get("/admin-data", protect, adminOnly, (_req, res) => {
   return res.json({ message: "Admin content" });
 });
 
@@ -181,6 +184,7 @@ router.get("/pending", protect, adminOnly, async (_req, res) => {
 router.patch("/pending/:userId/approve", protect, adminOnly, async (req, res) => {
   try {
     const user = await findApprovableUserById(req.params.userId);
+
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable." });
     }
@@ -202,6 +206,7 @@ router.patch("/pending/:userId/approve", protect, adminOnly, async (req, res) =>
 router.patch("/pending/:userId/reject", protect, adminOnly, async (req, res) => {
   try {
     const user = await findApprovableUserById(req.params.userId);
+
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable." });
     }

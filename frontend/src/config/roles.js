@@ -32,16 +32,16 @@ export function normalizeRole(role) {
 export function getRoleLabel(role) {
   const normalizedRole = normalizeRole(role)
 
+  if (normalizedRole === 'admin') {
+    return 'Administrateur'
+  }
+
   if (normalizedRole === 'directeur') {
     return 'Directeur'
   }
 
   if (normalizedRole === 'gestionnaire') {
     return 'Gestionnaire de stock'
-  }
-
-  if (normalizedRole === 'admin') {
-    return 'Administrateur'
   }
 
   return 'Role inconnu'
@@ -56,6 +56,4 @@ export const roleHomePaths = {
   administrateur: '/admin/approvals',
   directeur: '/directeur/dashboard',
   gestionnaire: '/gestionnaire-stock/dashboard',
-  'gestionnaire-stock': '/gestionnaire-stock/dashboard',
-  gestionnaire_stock: '/gestionnaire-stock/dashboard',
 }
