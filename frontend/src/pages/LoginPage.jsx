@@ -112,7 +112,7 @@ function LoginPage() {
                   id="identifier"
                   name="identifier"
                   type="text"
-                  placeholder="rami.bhk"
+                  placeholder="prenom.nom"
                   autoComplete="username"
                   value={formData.identifier}
                   onChange={handleChange}
