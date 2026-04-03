@@ -213,7 +213,7 @@ function RegisterForm() {
                   id="identifier"
                   name="identifier"
                   type="text"
-                  placeholder="rami.bhk"
+                  placeholder="nom.prenom"
                   autoComplete="username"
                   value={formData.identifier}
                   onChange={handleChange}
