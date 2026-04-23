@@ -313,6 +313,58 @@
   width: min(100%, 820px);
 }
 
+.arrival-card {
+  width: min(100%, 860px);
+  gap: 22px;
+}
+
+.arrival-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.arrival-card__identity {
+  display: grid;
+  gap: 6px;
+}
+
+.arrival-card__identity strong {
+  margin: 0;
+}
+
+.arrival-form {
+  display: grid;
+  gap: 16px;
+}
+
+.arrival-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.director-filter {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.director-filter select {
+  min-width: 150px;
+}
+
+.supplier-chart-wrap {
+  position: relative;
+  height: 360px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(15, 23, 42, 0.02);
+}
+
 .approval-header {
   display: flex;
   align-items: center;
@@ -436,9 +488,15 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .arrival-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
+  .arrival-grid,
   .register-grid,
   .password-field,
   .input-with-suffix {

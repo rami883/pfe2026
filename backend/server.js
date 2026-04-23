@@ -2,6 +2,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import authRoutes from './routes/auth.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { connectDB } from './config/db.js';
 dotenv.config();
 
@@ -22,6 +23,7 @@ app.options('*', cors(corsOptions));
 app.use(express.json());
 
 app.use('/api/users',authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 connectDB();
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
