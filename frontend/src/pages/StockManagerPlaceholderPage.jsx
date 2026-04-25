@@ -2,6 +2,7 @@ import { Boxes } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
+import { createReception } from '../api/dashboardApi'
 import { getRoleLabel } from '../config/roles'
 
 const INITIAL_FORM = {
@@ -20,6 +21,8 @@ function StockManagerPlaceholderPage() {
   const { logout, user } = useAuth()
   const [formData, setFormData] = useState(INITIAL_FORM)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
   const [isSubmitted, setIsSubmitted] = useState(false)
 
   async function handleLogout() {
@@ -41,11 +44,24 @@ function StockManagerPlaceholderPage() {
       [name]: value,
     }))
     setIsSubmitted(false)
+    setSubmitError('')
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
-    setIsSubmitted(true)
+    setIsSubmitting(true)
+    setSubmitError('')
+
+    try {
+      await createReception(formData)
+      setIsSubmitted(true)
+      setFormData(INITIAL_FORM)
+    } catch (error) {
+      setSubmitError(error?.message || "Impossible d'enregistrer la reception.")
+      setIsSubmitted(false)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -128,7 +144,7 @@ function StockManagerPlaceholderPage() {
                 required
               >
                 <option value="Truck">Truck</option>
-                <option value="VAN">VAN</option>
+                <option value="Van">Van</option>
               </select>
             </div>
 
@@ -188,14 +204,20 @@ function StockManagerPlaceholderPage() {
             </div>
           </div>
 
-          {isSubmitted ? (
-            <p className="form-success" role="status">
-              Arrivee enregistree localement avec succes.
+          {submitError ? (
+            <p className="form-error" role="alert">
+              {submitError}
             </p>
           ) : null}
 
-          <button type="submit" className="primary-button">
-            Enregistrer l'arrivee
+          {isSubmitted ? (
+            <p className="form-success" role="status">
+              Arrivee enregistree en base avec succes.
+            </p>
+          ) : null}
+
+          <button type="submit" className="primary-button" disabled={isSubmitting}>
+            {isSubmitting ? 'Enregistrement...' : "Enregistrer l'arrivee"}
           </button>
         </form>
       </section>

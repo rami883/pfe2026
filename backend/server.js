@@ -11,8 +11,36 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 const app = express();
 
+const DEFAULT_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+];
+
+const allowedOrigins = [
+    ...new Set(
+        [FRONTEND_URL, ...(process.env.FRONTEND_URLS || '').split(','), ...DEFAULT_ALLOWED_ORIGINS]
+            .map((value) => String(value || '').trim())
+            .filter(Boolean),
+    ),
+];
+
+const LOCAL_DEV_ORIGIN_PATTERN =
+    /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+):5173$/;
+
 const corsOptions = {
-    origin: FRONTEND_URL,
+    origin(origin, callback) {
+        if (!origin) {
+            callback(null, true);
+            return;
+        }
+
+        if (allowedOrigins.includes(origin) || LOCAL_DEV_ORIGIN_PATTERN.test(origin)) {
+            callback(null, true);
+            return;
+        }
+
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
