@@ -33,7 +33,7 @@ function parseDaysQuery(daysRaw) {
 
 function normalizeTransportType(valueRaw) {
   const value = String(valueRaw || '').trim().toLowerCase()
-  if (value === 'truck') {
+  if (value === 'truck' || value === 'camion') {
     return 'Truck'
   }
 
@@ -42,6 +42,31 @@ function normalizeTransportType(valueRaw) {
   }
 
   return ''
+}
+
+function sanitizeText(valueRaw, { maxLength = 120, toUpperCase = false } = {}) {
+  let value = String(valueRaw || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+
+  if (toUpperCase) {
+    value = value.toUpperCase()
+  }
+
+  if (!value) {
+    return ''
+  }
+
+  if (maxLength > 0 && value.length > maxLength) {
+    return ''
+  }
+
+  return value
+}
+
+function isValidArrivalTime(valueRaw) {
+  const value = String(valueRaw || '').trim()
+  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value)
 }
 
 function normalizeOrigin(valueRaw) {
@@ -59,7 +84,11 @@ function normalizeOrigin(valueRaw) {
 
 function parsePalletCount(valueRaw) {
   const parsed = Number(valueRaw)
-  if (!Number.isFinite(parsed) || parsed < 0) {
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
+    return null
+  }
+
+  if (parsed > 5000) {
     return null
   }
 
@@ -73,6 +102,32 @@ function deriveDayFromDate(dateRaw) {
   }
 
   return date.toLocaleDateString('en-US', { weekday: 'short' })
+}
+
+function parseArrivalDate(valueRaw) {
+  const value = String(valueRaw || '').trim()
+  if (!value) {
+    return null
+  }
+
+  const parsed = new Date(`${value}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) {
+    return null
+  }
+
+  return parsed
+}
+
+function formatDateForOutput(valueRaw) {
+  const parsed = new Date(valueRaw)
+  if (Number.isNaN(parsed.getTime())) {
+    return String(valueRaw || '').trim()
+  }
+
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 function parseDateQuery(dateRaw, { endOfDay = false } = {}) {
@@ -263,27 +318,83 @@ function getBaseAddFieldsStage() {
         },
       },
       vehicleTypeNormalized: {
-        $trim: {
-          input: {
-            $convert: {
-              input: { $ifNull: ['$Vehicle_Type', ''] },
-              to: 'string',
-              onError: '',
-              onNull: '',
+        $let: {
+          vars: {
+            vehicleTypeRaw: {
+              $trim: {
+                input: {
+                  $convert: {
+                    input: { $ifNull: ['$Vehicle_Type', ''] },
+                    to: 'string',
+                    onError: '',
+                    onNull: '',
+                  },
+                },
+              },
+            },
+            vehicleTypeRawLower: {
+              $toLower: {
+                $trim: {
+                  input: {
+                    $convert: {
+                      input: { $ifNull: ['$Vehicle_Type', ''] },
+                      to: 'string',
+                      onError: '',
+                      onNull: '',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          in: {
+            $switch: {
+              branches: [
+                {
+                  case: { $in: ['$$vehicleTypeRawLower', ['truck', 'camion']] },
+                  then: 'Truck',
+                },
+                {
+                  case: { $eq: ['$$vehicleTypeRawLower', 'van'] },
+                  then: 'Van',
+                },
+              ],
+              default: '$$vehicleTypeRaw',
             },
           },
         },
       },
       vehicleTypeNormalizedLower: {
-        $toLower: {
-          $trim: {
-            input: {
-              $convert: {
-                input: { $ifNull: ['$Vehicle_Type', ''] },
-                to: 'string',
-                onError: '',
-                onNull: '',
+        $let: {
+          vars: {
+            vehicleTypeRawLower: {
+              $toLower: {
+                $trim: {
+                  input: {
+                    $convert: {
+                      input: { $ifNull: ['$Vehicle_Type', ''] },
+                      to: 'string',
+                      onError: '',
+                      onNull: '',
+                    },
+                  },
+                },
               },
+            },
+          },
+          in: {
+            $switch: {
+              branches: [
+                {
+                  case: { $in: ['$$vehicleTypeRawLower', ['truck', 'camion']] },
+                  then: 'truck',
+                },
+                {
+                  case: { $eq: ['$$vehicleTypeRawLower', 'van'] },
+                  then: 'van',
+                },
+              ],
+              default: '$$vehicleTypeRawLower',
             },
           },
         },
@@ -441,22 +552,29 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
   try {
     const arrivalDate = String(req.body.arrivalDate || '').trim()
     const arrivalTime = String(req.body.arrivalTime || '').trim()
-    const trailerPlate = String(req.body.trailerPlate || '').trim()
-    const supplier = String(req.body.supplier || '').trim()
-    const position = String(req.body.position || '').trim()
+    const trailerPlate = sanitizeText(req.body.trailerPlate, {
+      maxLength: 40,
+      toUpperCase: true,
+    })
+    const supplier = sanitizeText(req.body.supplier, { maxLength: 120 })
+    const position = sanitizeText(req.body.position, { maxLength: 120 })
     const transportType = normalizeTransportType(req.body.transportType)
     const origin = normalizeOrigin(req.body.origin)
     const palletsCount = parsePalletCount(req.body.palletsCount)
+    const arrivalDateObject = parseArrivalDate(arrivalDate)
+    const hasValidTime = isValidArrivalTime(arrivalTime)
 
     if (
       !arrivalDate ||
+      !hasValidTime ||
       !arrivalTime ||
       !trailerPlate ||
       !supplier ||
       !position ||
       !transportType ||
       !origin ||
-      palletsCount === null
+      palletsCount === null ||
+      !arrivalDateObject
     ) {
       return res
         .status(400)
@@ -465,9 +583,9 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
 
     const created = await DashboardData.create({
       Record_No: trailerPlate,
-      Day: deriveDayFromDate(arrivalDate),
-      Planned_Date: arrivalDate,
-      Arrival_Date: arrivalDate,
+      Day: deriveDayFromDate(arrivalDateObject),
+      Planned_Date: arrivalDateObject,
+      Arrival_Date: arrivalDateObject,
       Arrival_Time: arrivalTime,
       Plate_No: trailerPlate,
       Vehicle_Type: transportType,
@@ -480,6 +598,7 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
       Waiting_Days: 0,
       Created_By_Email: req.user?.email || '',
       Created_By_Id: String(req.user?._id || ''),
+      Entry_Source: 'Manager_Form',
     })
 
     return res.status(201).json({
@@ -492,7 +611,7 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
         vehicleType: created.Vehicle_Type,
         pallets: created.N_Pallets,
         recordNo: created.Record_No,
-        arrivalDate: created.Arrival_Date,
+        arrivalDate: formatDateForOutput(created.Arrival_Date),
         arrivalTime: created.Arrival_Time,
       },
     })
@@ -528,7 +647,7 @@ router.get('/alerts/receptions', protect, requireDashboardAccess, async (req, re
         normalizeTransportType(row.Vehicle_Type) || String(row.Vehicle_Type || '').trim(),
       pallets: Number(row.N_Pallets) || 0,
       recordNo: String(row.Record_No || row.Plate_No || '').trim(),
-      arrivalDate: String(row.Arrival_Date || '').trim(),
+      arrivalDate: formatDateForOutput(row.Arrival_Date),
       arrivalTime: String(row.Arrival_Time || '').trim(),
     }))
 
@@ -607,6 +726,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
                   $cond: [{ $ne: ['$waitingDaysNumeric', null] }, 1, 0],
                 },
               },
+              totalReceptions: { $sum: 1 },
               onTimeCount: {
                 $sum: {
                   $cond: [
@@ -642,6 +762,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
             $project: {
               _id: 0,
               totalPallets: { $round: ['$totalPallets', 2] },
+              totalReceptions: 1,
               totalTrailers: {
                 $size: {
                   $setDifference: ['$trailersSet', ['', null]],
@@ -807,6 +928,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
     const kpis = {
       ...(kpiResult[0] || {
         totalPallets: 0,
+        totalReceptions: 0,
         totalTrailers: 0,
         palletsPerTrailer: 0,
         averageWaitingDays: 0,
@@ -968,7 +1090,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
                 },
               },
             },
-            trailersSet: { $addToSet: '$trailerNormalized' },
+            count: { $sum: 1 },
           },
         },
         { $sort: { '_id.day': 1 } },
@@ -976,11 +1098,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           $project: {
             _id: 0,
             day: '$_id.day',
-            count: {
-              $size: {
-                $setDifference: ['$trailersSet', ['', null]],
-              },
-            },
+            count: 1,
           },
         },
       ]),
@@ -994,7 +1112,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
               year: { $isoWeekYear: '$arrivalDateNormalized' },
               week: { $isoWeek: '$arrivalDateNormalized' },
             },
-            trailersSet: { $addToSet: '$trailerNormalized' },
+            count: { $sum: 1 },
           },
         },
         { $sort: { '_id.year': 1, '_id.week': 1 } },
@@ -1002,11 +1120,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           $project: {
             _id: 0,
             week: weekLabelProjection('$_id'),
-            count: {
-              $size: {
-                $setDifference: ['$trailersSet', ['', null]],
-              },
-            },
+            count: 1,
           },
         },
       ]),

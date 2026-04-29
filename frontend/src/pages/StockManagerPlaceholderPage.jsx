@@ -16,6 +16,47 @@ const INITIAL_FORM = {
   position: '',
 }
 
+function sanitizeText(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+}
+
+function buildReceptionPayload(formData) {
+  const arrivalDate = String(formData.arrivalDate || '').trim()
+  const arrivalTime = String(formData.arrivalTime || '').trim()
+  const trailerPlate = sanitizeText(formData.trailerPlate).toUpperCase()
+  const supplier = sanitizeText(formData.supplier)
+  const position = sanitizeText(formData.position)
+  const palletsCount = Number(formData.palletsCount)
+
+  const isValidTime = /^([01]\d|2[0-3]):([0-5]\d)$/.test(arrivalTime)
+  const isValidPallets =
+    Number.isInteger(palletsCount) && palletsCount > 0 && palletsCount <= 5000
+
+  const isValid =
+    Boolean(arrivalDate) &&
+    isValidTime &&
+    Boolean(trailerPlate) &&
+    Boolean(supplier) &&
+    Boolean(position) &&
+    isValidPallets
+
+  return {
+    isValid,
+    payload: {
+      arrivalDate,
+      arrivalTime,
+      trailerPlate,
+      transportType: formData.transportType,
+      supplier,
+      origin: formData.origin,
+      palletsCount,
+      position,
+    },
+  }
+}
+
 function StockManagerPlaceholderPage() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
@@ -49,11 +90,20 @@ function StockManagerPlaceholderPage() {
 
   async function handleSubmit(event) {
     event.preventDefault()
+    const normalized = buildReceptionPayload(formData)
+    if (!normalized.isValid) {
+      setSubmitError(
+        'Veuillez verifier le format des champs (heure HH:mm, palettes > 0, textes valides).',
+      )
+      setIsSubmitted(false)
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitError('')
 
     try {
-      await createReception(formData)
+      await createReception(normalized.payload)
       setIsSubmitted(true)
       setFormData(INITIAL_FORM)
     } catch (error) {
@@ -130,6 +180,7 @@ function StockManagerPlaceholderPage() {
                 value={formData.trailerPlate}
                 onChange={handleFieldChange}
                 placeholder="Ex: 123 TN 4567"
+                maxLength={40}
                 required
               />
             </div>
@@ -157,6 +208,7 @@ function StockManagerPlaceholderPage() {
                 value={formData.supplier}
                 onChange={handleFieldChange}
                 placeholder="Nom du fournisseur"
+                maxLength={120}
                 required
               />
             </div>
@@ -181,7 +233,7 @@ function StockManagerPlaceholderPage() {
                 id="pallets-count"
                 name="palletsCount"
                 type="number"
-                min="0"
+                min="1"
                 step="1"
                 value={formData.palletsCount}
                 onChange={handleFieldChange}
@@ -199,6 +251,7 @@ function StockManagerPlaceholderPage() {
                 value={formData.position}
                 onChange={handleFieldChange}
                 placeholder="Ex: Quai 02 / Zone A"
+                maxLength={120}
                 required
               />
             </div>

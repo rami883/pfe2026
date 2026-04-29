@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Clock3,
   Container,
+  ListChecks,
   Package,
   Target,
   TrendingDown,
@@ -71,6 +72,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   const kpis = payload?.kpis || {
     totalPallets: 0,
+    totalReceptions: 0,
     totalTrailers: 0,
     palletsPerTrailer: 0,
     averageWaitingDays: 0,
@@ -214,6 +216,12 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
           label="Total Pallets"
           value={formatNumber(kpis.totalPallets)}
           helper="Pallets recues sur la periode"
+        />
+        <KPIBox
+          icon={ListChecks}
+          label="Total Receptions"
+          value={formatNumber(kpis.totalReceptions)}
+          helper="Enregistrements receptions"
         />
         <KPIBox
           icon={Container}
