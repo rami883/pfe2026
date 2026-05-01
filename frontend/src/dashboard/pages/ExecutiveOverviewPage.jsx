@@ -55,7 +55,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         }
       } catch (requestError) {
         if (mounted) {
-          setError(requestError?.message || 'Impossible de charger Executive Overview.')
+          setError(requestError?.message || 'Impossible de charger la vue executive.')
         }
       } finally {
         if (mounted) {
@@ -112,7 +112,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
       labels: trailersByWeek.map((item) => item.week),
       datasets: [
         {
-          label: 'Trailers',
+          label: 'Remorques',
           data: trailersByWeek.map((item) => item.trailers),
           borderColor: '#d71920',
           backgroundColor: 'rgba(215, 25, 32, 0.14)',
@@ -131,7 +131,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
       labels: palletsPerTrailerByWeek.map((item) => item.week),
       datasets: [
         {
-          label: 'Pallets / Trailer',
+          label: 'Palettes / remorque',
           data: palletsPerTrailerByWeek.map((item) => item.palletsPerTrailer),
           borderColor: '#b51218',
           backgroundColor: 'rgba(181, 18, 24, 0.1)',
@@ -186,7 +186,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   if (isLoading) {
     return (
-      <SectionCard title="Executive Overview">
+      <SectionCard title="Vue executive">
         <p className="dashboard-muted">Chargement des indicateurs...</p>
       </SectionCard>
     )
@@ -194,7 +194,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Executive Overview">
+      <SectionCard title="Vue executive">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )
@@ -202,7 +202,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   if (!trailersByWeek.length && !palletsPerTrailerByWeek.length) {
     return (
-      <SectionCard title="Executive Overview">
+      <SectionCard title="Vue executive">
         <p className="dashboard-muted">Aucune donnee disponible pour cette periode.</p>
       </SectionCard>
     )
@@ -213,7 +213,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
       <section className="kpi-grid kpi-grid--six">
         <KPIBox
           icon={Package}
-          label="Total Pallets"
+          label="Total palettes"
           value={formatNumber(kpis.totalPallets)}
           helper="Pallets recues sur la periode"
         />
@@ -225,40 +225,40 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         />
         <KPIBox
           icon={Container}
-          label="Total Trailers"
+          label="Total remorques"
           value={formatNumber(kpis.totalTrailers)}
           helper="Remorques enregistrees"
         />
         <KPIBox
           icon={TrendingUp}
-          label="Pallets per Trailer"
+          label="Palettes par remorque"
           value={kpis.palletsPerTrailer}
           helper="Moyenne de chargement"
         />
         <KPIBox
           icon={Clock3}
-          label="Average Waiting Days"
+          label="Moyenne jours attente"
           value={kpis.averageWaitingDays}
           helper="Delai moyen avant dechargement"
         />
         <KPIBox
           icon={Target}
-          label="On-Time Unloading Rate"
+          label="Taux de dechargement a temps"
           value={`${kpis.onTimeUnloadingRate}%`}
-          helper="Waiting <= 1 jour"
+          helper="Attente <= 1 jour"
         />
         <KPIBox
           icon={TrendingDown}
-          label="Delay Rate"
+          label="Taux de retard"
           value={`${kpis.delayRate}%`}
-          helper="Waiting > 2 jours"
+          helper="Attente > 2 jours"
         />
       </section>
 
       <section className="kpi-grid kpi-grid--two">
         <KPIBox
           icon={Trophy}
-          label="Top Supplier"
+          label="Top fournisseur"
           value={kpis.topSupplier}
           helper={`${formatNumber(kpis.topSupplierPallets)} palettes`}
         />
@@ -266,7 +266,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
       <section className="chart-grid chart-grid--two">
         <ChartCard
-          title="Trailers by Week"
+          title="Remorques par semaine"
           subtitle="Evolution hebdomadaire des receptions"
           actions={
             <button
@@ -286,7 +286,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         </ChartCard>
 
         <ChartCard
-          title="Pallets per Trailer by Week"
+          title="Palettes par remorque par semaine"
           subtitle="Suivi de l'efficacite de remplissage"
           actions={
             <button
@@ -313,10 +313,10 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         <SectionCard title={`Drill-down semaine ${selectedWeekInsights.week}`}>
           <div className="drilldown-grid">
             <p>
-              <strong>Trailers:</strong> {formatNumber(selectedWeekInsights.trailers)}
+              <strong>Remorques:</strong> {formatNumber(selectedWeekInsights.trailers)}
             </p>
             <p>
-              <strong>Pallets/Trailer:</strong> {selectedWeekInsights.palletsPerTrailer}
+              <strong>Palettes/remorque:</strong> {selectedWeekInsights.palletsPerTrailer}
             </p>
             <p>
               <strong>Pallets estimes:</strong>{' '}

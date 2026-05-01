@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bar, Doughnut, Line } from 'react-chartjs-2'
 import '../chartSetup'
 import ChartCard from '../components/ChartCard'
-import DataTable from '../components/DataTable'
 import SectionCard from '../components/SectionCard'
 import { getOperationsMonitoring } from '../../api/dashboardApi'
 
@@ -80,7 +79,6 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
   const [payload, setPayload] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedDay, setSelectedDay] = useState('')
   const receptionsDayRef = useRef(null)
   const receptionsWeekRef = useRef(null)
   const arrivalsHourRef = useRef(null)
@@ -91,7 +89,6 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     async function loadOperationsData() {
       setIsLoading(true)
       setError('')
-      setSelectedDay('')
 
       try {
         const response = await getOperationsMonitoring(filters)
@@ -101,7 +98,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
       } catch (requestError) {
         if (mounted) {
           setError(
-            requestError?.message || 'Impossible de charger Operations Monitoring.',
+            requestError?.message || 'Impossible de charger le suivi des operations.',
           )
         }
       } finally {
@@ -123,14 +120,6 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
   const vehicleTypeDistribution = payload?.vehicleTypeDistribution || []
   const originDistribution = payload?.originDistribution || []
   const recentShipments = payload?.recentShipments || []
-
-  const visibleShipments = useMemo(() => {
-    if (!selectedDay) {
-      return recentShipments
-    }
-
-    return recentShipments.filter((item) => item.arrivalDate === selectedDay)
-  }, [recentShipments, selectedDay])
 
   const receptionsByDayData = useMemo(
     () => ({
@@ -171,7 +160,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
       labels: arrivalsByHour.map((item) => item.hour),
       datasets: [
         {
-          label: 'Arrivals',
+          label: 'Arrivees',
           data: arrivalsByHour.map((item) => item.count),
           backgroundColor: '#d71920',
           borderRadius: 8,
@@ -211,38 +200,9 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     [originDistribution],
   )
 
-  const tableColumns = useMemo(
-    () => [
-      { key: 'recordNo', header: 'Record No' },
-      { key: 'supplier', header: 'Supplier' },
-      { key: 'arrivalDate', header: 'Arrival Date' },
-      { key: 'arrivalTime', header: 'Arrival Time' },
-      { key: 'pallets', header: 'Pallets' },
-      { key: 'vehicleType', header: 'Vehicle Type' },
-      { key: 'origin', header: 'Origin' },
-      { key: 'waitingDays', header: 'Waiting Days' },
-      {
-        key: 'status',
-        header: 'Status',
-        render(value) {
-          return (
-            <span
-              className={`status-pill status-pill--${value
-                .toLowerCase()
-                .replace(/\s+/g, '-')}`}
-            >
-              {value}
-            </span>
-          )
-        },
-      },
-    ],
-    [],
-  )
-
   if (isLoading) {
     return (
-      <SectionCard title="Operations Monitoring">
+      <SectionCard title="Suivi des operations">
         <p className="dashboard-muted">Chargement des donnees operations...</p>
       </SectionCard>
     )
@@ -250,7 +210,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Operations Monitoring">
+      <SectionCard title="Suivi des operations">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )
@@ -263,7 +223,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     !recentShipments.length
   ) {
     return (
-      <SectionCard title="Operations Monitoring">
+      <SectionCard title="Suivi des operations">
         <p className="dashboard-muted">Aucune donnee operationnelle disponible.</p>
       </SectionCard>
     )
@@ -273,8 +233,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     <>
       <section className="chart-grid chart-grid--operations">
         <ChartCard
-          title="Trailer Receptions by Day"
-          subtitle="Clique sur un point pour filtrer la table"
+          title="Receptions de remorques par jour"
           actions={
             <button
               type="button"
@@ -291,13 +250,13 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
             <Line
               ref={receptionsDayRef}
               data={receptionsByDayData}
-              options={baseAxisOptions(setSelectedDay)}
+              options={baseAxisOptions()}
             />
           </div>
         </ChartCard>
 
         <ChartCard
-          title="Trailer Receptions by Week"
+          title="Receptions de remorques par semaine"
           actions={
             <button
               type="button"
@@ -320,7 +279,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
         </ChartCard>
 
         <ChartCard
-          title="Trailer Arrivals by Hour"
+          title="Arrivees de remorques par heure"
           actions={
             <button
               type="button"
@@ -338,40 +297,18 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
           </div>
         </ChartCard>
 
-        <ChartCard title="Vehicle Type Distribution">
+        <ChartCard title="Repartition type de vehicule">
           <div className="chart-canvas-wrap chart-canvas-wrap--doughnut">
             <Doughnut data={vehicleTypeData} options={doughnutOptions()} />
           </div>
         </ChartCard>
 
-        <ChartCard title="Origin Distribution">
+        <ChartCard title="Repartition origine">
           <div className="chart-canvas-wrap chart-canvas-wrap--doughnut">
             <Doughnut data={originData} options={doughnutOptions()} />
           </div>
         </ChartCard>
       </section>
-
-      <SectionCard title="Recent Shipment / Reception Table">
-        {selectedDay ? (
-          <div className="dashboard-inline-controls">
-            <p className="dashboard-muted">
-              Drill-down actif sur la date: <strong>{selectedDay}</strong>
-            </p>
-            <button
-              type="button"
-              className="dashboard-clear-btn dashboard-clear-btn--small"
-              onClick={() => setSelectedDay('')}
-            >
-              Retirer le drill-down
-            </button>
-          </div>
-        ) : null}
-        <DataTable
-          columns={tableColumns}
-          rows={visibleShipments}
-          emptyMessage="Aucune reception recente disponible."
-        />
-      </SectionCard>
     </>
   )
 }

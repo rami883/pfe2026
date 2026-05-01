@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   LineChart,
   Settings,
+  Trash2,
   Truck,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -20,17 +21,18 @@ import DashboardLayout from '../dashboard/components/DashboardLayout'
 import SectionCard from '../dashboard/components/SectionCard'
 import ExecutiveOverviewPage from '../dashboard/pages/ExecutiveOverviewPage'
 import OperationsMonitoringPage from '../dashboard/pages/OperationsMonitoringPage'
+import ReportsPage from '../dashboard/pages/ReportsPage'
 import SupplierPerformancePage from '../dashboard/pages/SupplierPerformancePage'
 import '../dashboard/dashboard.css'
 
 const BASE_NAV_ITEMS = [
-  { id: 'executive', label: 'Executive Overview', icon: LayoutDashboard },
-  { id: 'suppliers', label: 'Suppliers', icon: Truck },
+  { id: 'executive', label: 'Vue executive', icon: LayoutDashboard },
+  { id: 'suppliers', label: 'Fournisseurs', icon: Truck },
   { id: 'operations', label: 'Operations', icon: Activity },
-  { id: 'analytics', label: 'Analytics', icon: LineChart },
-  { id: 'reports', label: 'Reports', icon: FileText },
-  { id: 'alerts', label: 'Alerts', icon: BellRing },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: 'analytics', label: 'Analytique', icon: LineChart },
+  { id: 'reports', label: 'Rapports', icon: FileText },
+  { id: 'alerts', label: 'Alertes', icon: BellRing },
+  { id: 'settings', label: 'Parametres', icon: Settings },
 ]
 
 const PERIOD_OPTIONS = [
@@ -54,34 +56,67 @@ function createDefaultFilters() {
 
 const PAGE_CONTENT = {
   executive: {
-    title: 'Executive Overview',
+    title: 'Vue executive',
     subtitle:
       'Vue globale des performances logistiques et de la productivite hebdomadaire.',
   },
   suppliers: {
-    title: 'Supplier Performance',
+    title: 'Performance fournisseurs',
     subtitle: 'Analyse comparative des fournisseurs par volume, remorques et efficacite.',
   },
   operations: {
-    title: 'Operations Monitoring',
+    title: 'Suivi des operations',
     subtitle: 'Pilotage quotidien des receptions, flux horaires et dernieres operations.',
   },
   analytics: {
-    title: 'Analytics',
+    title: 'Analytique',
     subtitle: "Module d'analyse avancee en cours de configuration.",
   },
   reports: {
-    title: 'Reports',
+    title: 'Rapports',
     subtitle: 'Centre de reporting corporate en preparation.',
   },
   alerts: {
-    title: 'Alerts',
+    title: 'Alertes',
     subtitle: 'Nouvelles receptions envoyees par les gestionnaires.',
   },
   settings: {
-    title: 'Settings',
+    title: 'Parametres',
     subtitle: 'Parametres de la plateforme dashboard.',
   },
+}
+
+const DISMISSED_ALERTS_STORAGE_KEY = 'pfe_director_dismissed_alert_ids'
+
+function getDismissedAlertIds() {
+  if (typeof window === 'undefined') {
+    return []
+  }
+
+  try {
+    const raw = window.localStorage.getItem(DISMISSED_ALERTS_STORAGE_KEY)
+    if (!raw) {
+      return []
+    }
+
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed)
+      ? parsed.map((value) => String(value || '').trim()).filter(Boolean)
+      : []
+  } catch {
+    return []
+  }
+}
+
+function saveDismissedAlertIds(ids = []) {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  window.localStorage.setItem(
+    DISMISSED_ALERTS_STORAGE_KEY,
+    JSON.stringify(ids.slice(-500)),
+  )
 }
 
 function DirectorPlaceholderPage() {
@@ -99,6 +134,7 @@ function DirectorPlaceholderPage() {
   const [unreadAlerts, setUnreadAlerts] = useState(0)
   const [refreshTick, setRefreshTick] = useState(0)
   const knownAlertIdsRef = useRef(new Set())
+  const dismissedAlertIdsRef = useRef(new Set(getDismissedAlertIds()))
 
   const pageMeta = PAGE_CONTENT[activeView] || PAGE_CONTENT.executive
 
@@ -190,16 +226,19 @@ function DirectorPlaceholderPage() {
           ...row,
           id: String(row?.id || '').trim(),
         }))
+        const visibleRows = normalizedRows.filter(
+          (row) => row.id && !dismissedAlertIdsRef.current.has(row.id),
+        )
 
         if (isInitialLoad) {
           knownAlertIdsRef.current = new Set(
-            normalizedRows.map((row) => row.id).filter(Boolean),
+            visibleRows.map((row) => row.id).filter(Boolean),
           )
-          setAlerts(normalizedRows)
+          setAlerts(visibleRows)
           return
         }
 
-        const newRows = normalizedRows.filter(
+        const newRows = visibleRows.filter(
           (row) => row.id && !knownAlertIdsRef.current.has(row.id),
         )
 
@@ -209,7 +248,7 @@ function DirectorPlaceholderPage() {
         }
 
         setAlerts((currentAlerts) => {
-          const merged = [...normalizedRows, ...currentAlerts]
+          const merged = [...visibleRows, ...currentAlerts]
           const uniqueMap = new Map()
           for (const alert of merged) {
             if (alert.id && !uniqueMap.has(alert.id)) {
@@ -220,7 +259,7 @@ function DirectorPlaceholderPage() {
           return Array.from(uniqueMap.values()).slice(0, 50)
         })
 
-        for (const row of normalizedRows) {
+        for (const row of visibleRows) {
           if (row.id) {
             knownAlertIdsRef.current.add(row.id)
           }
@@ -254,8 +293,21 @@ function DirectorPlaceholderPage() {
     setFilters((currentFilters) => {
       const nextFilters = { ...currentFilters, [field]: value }
 
-      if (field === 'fromDate' || field === 'toDate') {
-        nextFilters.days = currentFilters.days
+      if (field === 'days') {
+        nextFilters.fromDate = ''
+        nextFilters.toDate = ''
+      }
+
+      if (field === 'fromDate') {
+        if (nextFilters.toDate && nextFilters.toDate < value) {
+          nextFilters.toDate = value
+        }
+      }
+
+      if (field === 'toDate') {
+        if (nextFilters.fromDate && nextFilters.fromDate > value) {
+          nextFilters.fromDate = value
+        }
       }
 
       return nextFilters
@@ -276,6 +328,20 @@ function DirectorPlaceholderPage() {
   function handleOpenAlerts() {
     setActiveView('alerts')
     setUnreadAlerts(0)
+  }
+
+  function handleDismissAlert(alertId) {
+    const normalizedId = String(alertId || '').trim()
+    if (!normalizedId) {
+      return
+    }
+
+    dismissedAlertIdsRef.current.add(normalizedId)
+    saveDismissedAlertIds(Array.from(dismissedAlertIdsRef.current))
+    setAlerts((currentAlerts) =>
+      currentAlerts.filter((alert) => alert.id !== normalizedId),
+    )
+    setUnreadAlerts((current) => Math.max(0, current - 1))
   }
 
   async function handleLogout() {
@@ -323,7 +389,7 @@ function DirectorPlaceholderPage() {
             <div className="dashboard-alert-list">
               {alerts.map((alert) => (
                 <article key={alert.id} className="dashboard-alert-item">
-                  <strong>{alert.supplier || 'Supplier inconnu'}</strong>
+                  <strong>{alert.supplier || 'Fournisseur inconnu'}</strong>
                   <p>
                     Remorque: {alert.recordNo || '-'} | Origine: {alert.origin || '-'} |
                     Type: {alert.vehicleType || '-'} | Palettes: {alert.pallets || 0}
@@ -332,12 +398,25 @@ function DirectorPlaceholderPage() {
                     Arrivee: {alert.arrivalDate || '-'} {alert.arrivalTime || '-'} | Ajoutee
                     le: {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : '-'}
                   </small>
+                  <button
+                    type="button"
+                    className="ghost-button dashboard-alert-dismiss-btn"
+                    onClick={() => handleDismissAlert(alert.id)}
+                  >
+                    <span className="button-content">
+                      <Trash2 size={14} aria-hidden="true" />
+                    </span>
+                  </button>
                 </article>
               ))}
             </div>
           )}
         </SectionCard>
       )
+    }
+
+    if (activeView === 'reports') {
+      return <ReportsPage filters={filters} refreshTick={refreshTick} />
     }
 
     return (
@@ -369,6 +448,8 @@ function DirectorPlaceholderPage() {
       vehicleTypeOptions={vehicleTypeOptions}
       notificationCount={unreadAlerts}
       onOpenAlerts={handleOpenAlerts}
+      showHeader={!['reports', 'alerts'].includes(activeView)}
+      showFilters={!['reports', 'alerts'].includes(activeView)}
     >
       {filtersError ? <p className="dashboard-error">{filtersError}</p> : null}
       {renderedPage}

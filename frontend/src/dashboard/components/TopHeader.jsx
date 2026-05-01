@@ -3,6 +3,7 @@ import { Bell, Building2, ChevronDown } from 'lucide-react'
 function TopHeader({
   title,
   subtitle,
+  showFilters = true,
   filters,
   onFiltersChange,
   onResetFilters,
@@ -44,7 +45,8 @@ function TopHeader({
         </div>
       </div>
 
-      <div className="dashboard-filters-grid">
+      {showFilters ? (
+        <div className="dashboard-filters-grid">
         <label className="dashboard-filter">
           <span>Periode</span>
           <div className="dashboard-filter__control">
@@ -85,7 +87,7 @@ function TopHeader({
         </label>
 
         <label className="dashboard-filter">
-          <span>Origin</span>
+          <span>Origine</span>
           <div className="dashboard-filter__control">
             <select
               value={filters.origin}
@@ -102,7 +104,7 @@ function TopHeader({
         </label>
 
         <label className="dashboard-filter">
-          <span>Vehicle Type</span>
+          <span>Type de vehicule</span>
           <div className="dashboard-filter__control">
             <select
               value={filters.vehicleType}
@@ -124,7 +126,7 @@ function TopHeader({
               <span className="dashboard-filter-multi__icon" aria-hidden="true">
                 <Building2 size={13} />
               </span>
-              Suppliers (multi-select)
+              Fournisseurs (selection multiple)
             </span>
             <span className="dashboard-filter-multi__count">
               {filters.suppliers.length
@@ -157,7 +159,8 @@ function TopHeader({
             Reinitialiser les filtres
           </button>
         </div>
-      </div>
+        </div>
+      ) : null}
     </header>
   )
 }

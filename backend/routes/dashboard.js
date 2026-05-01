@@ -1,4 +1,4 @@
-import express from 'express'
+﻿import express from 'express'
 import DashboardData from '../models/DashboardData.js'
 import { protect } from '../middleware/auth.js'
 
@@ -33,7 +33,7 @@ function parseDaysQuery(daysRaw) {
 
 function normalizeTransportType(valueRaw) {
   const value = String(valueRaw || '').trim().toLowerCase()
-  if (value === 'truck' || value === 'camion') {
+  if (value === 'truck') {
     return 'Truck'
   }
 
@@ -42,31 +42,6 @@ function normalizeTransportType(valueRaw) {
   }
 
   return ''
-}
-
-function sanitizeText(valueRaw, { maxLength = 120, toUpperCase = false } = {}) {
-  let value = String(valueRaw || '')
-    .trim()
-    .replace(/\s+/g, ' ')
-
-  if (toUpperCase) {
-    value = value.toUpperCase()
-  }
-
-  if (!value) {
-    return ''
-  }
-
-  if (maxLength > 0 && value.length > maxLength) {
-    return ''
-  }
-
-  return value
-}
-
-function isValidArrivalTime(valueRaw) {
-  const value = String(valueRaw || '').trim()
-  return /^([01]\d|2[0-3]):([0-5]\d)$/.test(value)
 }
 
 function normalizeOrigin(valueRaw) {
@@ -84,24 +59,11 @@ function normalizeOrigin(valueRaw) {
 
 function parsePalletCount(valueRaw) {
   const parsed = Number(valueRaw)
-  if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed <= 0) {
-    return null
-  }
-
-  if (parsed > 5000) {
+  if (!Number.isFinite(parsed) || parsed < 0) {
     return null
   }
 
   return parsed
-}
-
-function deriveDayFromDate(dateRaw) {
-  const date = new Date(dateRaw)
-  if (Number.isNaN(date.getTime())) {
-    return ''
-  }
-
-  return date.toLocaleDateString('en-US', { weekday: 'short' })
 }
 
 function parseArrivalDate(valueRaw) {
@@ -118,16 +80,31 @@ function parseArrivalDate(valueRaw) {
   return parsed
 }
 
-function formatDateForOutput(valueRaw) {
-  const parsed = new Date(valueRaw)
-  if (Number.isNaN(parsed.getTime())) {
-    return String(valueRaw || '').trim()
+function formatDateValue(valueRaw) {
+  if (valueRaw instanceof Date && !Number.isNaN(valueRaw.getTime())) {
+    return valueRaw.toISOString().slice(0, 10)
   }
 
-  const year = parsed.getFullYear()
-  const month = String(parsed.getMonth() + 1).padStart(2, '0')
-  const day = String(parsed.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  const value = String(valueRaw || '').trim()
+  if (!value) {
+    return ''
+  }
+
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) {
+    return value
+  }
+
+  return parsed.toISOString().slice(0, 10)
+}
+
+function deriveDayFromDate(dateRaw) {
+  const date = new Date(dateRaw)
+  if (Number.isNaN(date.getTime())) {
+    return ''
+  }
+
+  return date.toLocaleDateString('en-US', { weekday: 'short' })
 }
 
 function parseDateQuery(dateRaw, { endOfDay = false } = {}) {
@@ -214,6 +191,7 @@ function getBaseAddFieldsStage() {
           input: {
             $convert: {
               input: { $ifNull: ['$Supplier', ''] },
+              input: { $ifNull: ['$Fournisseur', ''] },
               to: 'string',
               onError: '',
               onNull: '',
@@ -226,7 +204,7 @@ function getBaseAddFieldsStage() {
           $trim: {
             input: {
               $convert: {
-                input: { $ifNull: ['$Supplier', ''] },
+                input: { $ifNull: ['$Fournisseur', ''] },
                 to: 'string',
                 onError: '',
                 onNull: '',
@@ -239,7 +217,7 @@ function getBaseAddFieldsStage() {
         $trim: {
           input: {
             $convert: {
-              input: { $ifNull: ['$Record_No', '$Plate_No'] },
+              input: { $ifNull: ['$Total_N', '$Plaque_Immatriculation'] },
               to: 'string',
               onError: '',
               onNull: '',
@@ -255,7 +233,7 @@ function getBaseAddFieldsStage() {
                 $trim: {
                   input: {
                     $convert: {
-                      input: { $ifNull: ['$Origin', ''] },
+                      input: { $ifNull: ['$Origine', ''] },
                       to: 'string',
                       onError: '',
                       onNull: '',
@@ -290,7 +268,7 @@ function getBaseAddFieldsStage() {
                 $trim: {
                   input: {
                     $convert: {
-                      input: { $ifNull: ['$Origin', ''] },
+                      input: { $ifNull: ['$Origine', ''] },
                       to: 'string',
                       onError: '',
                       onNull: '',
@@ -318,90 +296,34 @@ function getBaseAddFieldsStage() {
         },
       },
       vehicleTypeNormalized: {
-        $let: {
-          vars: {
-            vehicleTypeRaw: {
-              $trim: {
-                input: {
-                  $convert: {
-                    input: { $ifNull: ['$Vehicle_Type', ''] },
-                    to: 'string',
-                    onError: '',
-                    onNull: '',
-                  },
-                },
-              },
-            },
-            vehicleTypeRawLower: {
-              $toLower: {
-                $trim: {
-                  input: {
-                    $convert: {
-                      input: { $ifNull: ['$Vehicle_Type', ''] },
-                      to: 'string',
-                      onError: '',
-                      onNull: '',
-                    },
-                  },
-                },
-              },
-            },
-          },
-          in: {
-            $switch: {
-              branches: [
-                {
-                  case: { $in: ['$$vehicleTypeRawLower', ['truck', 'camion']] },
-                  then: 'Truck',
-                },
-                {
-                  case: { $eq: ['$$vehicleTypeRawLower', 'van'] },
-                  then: 'Van',
-                },
-              ],
-              default: '$$vehicleTypeRaw',
+        $trim: {
+          input: {
+            $convert: {
+              input: { $ifNull: ['$Type_Véhicule', ''] },
+              to: 'string',
+              onError: '',
+              onNull: '',
             },
           },
         },
       },
       vehicleTypeNormalizedLower: {
-        $let: {
-          vars: {
-            vehicleTypeRawLower: {
-              $toLower: {
-                $trim: {
-                  input: {
-                    $convert: {
-                      input: { $ifNull: ['$Vehicle_Type', ''] },
-                      to: 'string',
-                      onError: '',
-                      onNull: '',
-                    },
-                  },
-                },
+        $toLower: {
+          $trim: {
+            input: {
+              $convert: {
+                input: { $ifNull: ['$Type_Véhicule', ''] },
+                to: 'string',
+                onError: '',
+                onNull: '',
               },
-            },
-          },
-          in: {
-            $switch: {
-              branches: [
-                {
-                  case: { $in: ['$$vehicleTypeRawLower', ['truck', 'camion']] },
-                  then: 'truck',
-                },
-                {
-                  case: { $eq: ['$$vehicleTypeRawLower', 'van'] },
-                  then: 'van',
-                },
-              ],
-              default: '$$vehicleTypeRawLower',
             },
           },
         },
       },
       palletsNumeric: {
         $convert: {
-          input: { $ifNull: ['$N_Pallets', 0] },
+          input: { $ifNull: ['$Nb_Palettes', 0] },
           to: 'double',
           onError: 0,
           onNull: 0,
@@ -409,7 +331,7 @@ function getBaseAddFieldsStage() {
       },
       waitingDaysNumeric: {
         $convert: {
-          input: { $ifNull: ['$Waiting_Days', null] },
+          input: { $ifNull: ["$Jours_d'Attente", null] },
           to: 'double',
           onError: null,
           onNull: null,
@@ -417,7 +339,7 @@ function getBaseAddFieldsStage() {
       },
       arrivalDateNormalized: {
         $convert: {
-          input: { $ifNull: ['$Arrival_Date', null] },
+          input: { $ifNull: ['$Date_Arrivée', null] },
           to: 'date',
           onError: null,
           onNull: null,
@@ -427,7 +349,7 @@ function getBaseAddFieldsStage() {
         $trim: {
           input: {
             $convert: {
-              input: { $ifNull: ['$Arrival_Time', ''] },
+              input: { $ifNull: ['$Heure_Arrivée', ''] },
               to: 'string',
               onError: '',
               onNull: '',
@@ -437,7 +359,7 @@ function getBaseAddFieldsStage() {
       },
       arrivalTimeAsDate: {
         $convert: {
-          input: { $ifNull: ['$Arrival_Time', null] },
+          input: { $ifNull: ['$Heure_Arrivée', null] },
           to: 'date',
           onError: null,
           onNull: null,
@@ -551,30 +473,25 @@ router.get('/suppliers/options', protect, requireDashboardAccess, async (req, re
 router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res) => {
   try {
     const arrivalDate = String(req.body.arrivalDate || '').trim()
+    const arrivalDateAsDate = parseArrivalDate(arrivalDate)
     const arrivalTime = String(req.body.arrivalTime || '').trim()
-    const trailerPlate = sanitizeText(req.body.trailerPlate, {
-      maxLength: 40,
-      toUpperCase: true,
-    })
-    const supplier = sanitizeText(req.body.supplier, { maxLength: 120 })
-    const position = sanitizeText(req.body.position, { maxLength: 120 })
+    const trailerPlate = String(req.body.trailerPlate || '').trim()
+    const supplier = String(req.body.supplier || '').trim()
+    const position = String(req.body.position || '').trim()
     const transportType = normalizeTransportType(req.body.transportType)
     const origin = normalizeOrigin(req.body.origin)
     const palletsCount = parsePalletCount(req.body.palletsCount)
-    const arrivalDateObject = parseArrivalDate(arrivalDate)
-    const hasValidTime = isValidArrivalTime(arrivalTime)
 
     if (
       !arrivalDate ||
-      !hasValidTime ||
+      !arrivalDateAsDate ||
       !arrivalTime ||
       !trailerPlate ||
       !supplier ||
       !position ||
       !transportType ||
       !origin ||
-      palletsCount === null ||
-      !arrivalDateObject
+      palletsCount === null
     ) {
       return res
         .status(400)
@@ -582,37 +499,34 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
     }
 
     const created = await DashboardData.create({
-      Record_No: trailerPlate,
-      Day: deriveDayFromDate(arrivalDateObject),
-      Planned_Date: arrivalDateObject,
-      Arrival_Date: arrivalDateObject,
-      Arrival_Time: arrivalTime,
-      Plate_No: trailerPlate,
-      Vehicle_Type: transportType,
-      Supplier: supplier,
-      Origin: origin,
-      N_Pallets: palletsCount,
-      Position: position,
-      Unloaded_Date: null,
-      Unloaded_Time: null,
-      Waiting_Days: 0,
+      Total_N: trailerPlate,
+      Jour: deriveDayFromDate(arrivalDateAsDate),
+      'Date_Prévue': arrivalDateAsDate,
+      'Date_Arrivée': arrivalDateAsDate,
+      'Heure_Arrivée': arrivalTime,
+      Plaque_Immatriculation: trailerPlate,
+      'Type_Véhicule': transportType,
+      Fournisseur: supplier,
+      Origine: origin,
+      Nb_Palettes: palletsCount,
+      'Date_Déchargement': null,
+      'temp_Déchargement': null,
+      'Jours_d\'Attente': 0,
       Created_By_Email: req.user?.email || '',
       Created_By_Id: String(req.user?._id || ''),
-      Entry_Source: 'Manager_Form',
     })
-
     return res.status(201).json({
       message: 'Reception enregistree avec succes.',
       reception: {
         id: String(created._id),
         createdAt: created.createdAt,
-        supplier: created.Supplier,
-        origin: created.Origin,
-        vehicleType: created.Vehicle_Type,
-        pallets: created.N_Pallets,
-        recordNo: created.Record_No,
-        arrivalDate: formatDateForOutput(created.Arrival_Date),
-        arrivalTime: created.Arrival_Time,
+        supplier: created.Fournisseur,
+        origin: created.Origine,
+        vehicleType: created['Type_Véhicule'],
+        pallets: created.Nb_Palettes,
+        recordNo: created.Total_N,
+        arrivalDate: formatDateValue(created['Date_Arrivée']),
+        arrivalTime: created['Heure_Arrivée'],
       },
     })
   } catch (error) {
@@ -634,21 +548,21 @@ router.get('/alerts/receptions', protect, requireDashboardAccess, async (req, re
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .select(
-        '_id createdAt Supplier Origin Vehicle_Type N_Pallets Record_No Plate_No Arrival_Date Arrival_Time',
+        "_id createdAt Fournisseur Origine Type_Véhicule Nb_Palettes Total_N Plaque_Immatriculation Date_Arrivée Heure_Arrivée",
       )
       .lean()
 
     const alerts = rows.map((row) => ({
       id: String(row._id),
       createdAt: row.createdAt,
-      supplier: String(row.Supplier || '').trim(),
-      origin: normalizeOrigin(row.Origin) || String(row.Origin || '').trim(),
+      supplier: String(row.Fournisseur || '').trim(),
+      origin: normalizeOrigin(row.Origine) || String(row.Origine || '').trim(),
       vehicleType:
-        normalizeTransportType(row.Vehicle_Type) || String(row.Vehicle_Type || '').trim(),
-      pallets: Number(row.N_Pallets) || 0,
-      recordNo: String(row.Record_No || row.Plate_No || '').trim(),
-      arrivalDate: formatDateForOutput(row.Arrival_Date),
-      arrivalTime: String(row.Arrival_Time || '').trim(),
+        normalizeTransportType(row['Type_Véhicule']) || String(row['Type_Véhicule'] || '').trim(),
+      pallets: Number(row.Nb_Palettes) || 0,
+      recordNo: String(row.Total_N || row.Plaque_Immatriculation || '').trim(),
+      arrivalDate: formatDateValue(row['Date_Arrivée']),
+      arrivalTime: String(row['Heure_Arrivée'] || '').trim(),
     }))
 
     return res.status(200).json(alerts)
@@ -726,7 +640,6 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
                   $cond: [{ $ne: ['$waitingDaysNumeric', null] }, 1, 0],
                 },
               },
-              totalReceptions: { $sum: 1 },
               onTimeCount: {
                 $sum: {
                   $cond: [
@@ -762,7 +675,6 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
             $project: {
               _id: 0,
               totalPallets: { $round: ['$totalPallets', 2] },
-              totalReceptions: 1,
               totalTrailers: {
                 $size: {
                   $setDifference: ['$trailersSet', ['', null]],
@@ -928,7 +840,6 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
     const kpis = {
       ...(kpiResult[0] || {
         totalPallets: 0,
-        totalReceptions: 0,
         totalTrailers: 0,
         palletsPerTrailer: 0,
         averageWaitingDays: 0,
@@ -1090,7 +1001,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
                 },
               },
             },
-            count: { $sum: 1 },
+            trailersSet: { $addToSet: '$trailerNormalized' },
           },
         },
         { $sort: { '_id.day': 1 } },
@@ -1098,7 +1009,11 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           $project: {
             _id: 0,
             day: '$_id.day',
-            count: 1,
+            count: {
+              $size: {
+                $setDifference: ['$trailersSet', ['', null]],
+              },
+            },
           },
         },
       ]),
@@ -1112,7 +1027,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
               year: { $isoWeekYear: '$arrivalDateNormalized' },
               week: { $isoWeek: '$arrivalDateNormalized' },
             },
-            count: { $sum: 1 },
+            trailersSet: { $addToSet: '$trailerNormalized' },
           },
         },
         { $sort: { '_id.year': 1, '_id.week': 1 } },
@@ -1120,7 +1035,11 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           $project: {
             _id: 0,
             week: weekLabelProjection('$_id'),
-            count: 1,
+            count: {
+              $size: {
+                $setDifference: ['$trailersSet', ['', null]],
+              },
+            },
           },
         },
       ]),
@@ -1205,7 +1124,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
         {
           $project: {
             _id: 0,
-            recordNo: { $ifNull: ['$Record_No', '$Plate_No'] },
+            recordNo: { $ifNull: ['$Total_N', '$Plaque_Immatriculation'] },
             supplier: '$supplierNormalized',
             arrivalDate: {
               $dateToString: {
@@ -1219,7 +1138,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
             origin: '$originNormalized',
             waitingDays: '$waitingDaysNumeric',
             status: {
-              $cond: [{ $ifNull: ['$Unloaded_Date', false] }, 'Unloaded', 'In Progress'],
+              $cond: [{ $ifNull: ['$Date_Déchargement', false] }, 'Unloaded', 'In Progress'],
             },
           },
         },
@@ -1273,3 +1192,4 @@ router.get('/supplier', protect, requireDashboardAccess, async (req, res) => {
 })
 
 export default router
+

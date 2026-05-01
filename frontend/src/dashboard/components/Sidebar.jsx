@@ -13,7 +13,7 @@ function Sidebar({
       <div className="dashboard-logo">
         <span className="dashboard-logo__mark">Y</span>
         <div>
-          <strong>Yazaki Logistics</strong>
+          <strong>Yazaki Reception</strong>
           <p>Executive BI Suite</p>
         </div>
       </div>

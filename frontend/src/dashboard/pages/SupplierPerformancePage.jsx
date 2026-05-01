@@ -116,7 +116,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
       } catch (requestError) {
         if (mounted) {
           setError(
-            requestError?.message || 'Impossible de charger Supplier Performance.',
+            requestError?.message || 'Impossible de charger la performance fournisseurs.',
           )
         }
       } finally {
@@ -160,36 +160,36 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
   )
 
   const palletsChartData = useMemo(
-    () => toChartData(topSuppliersByPallets, 'Pallets'),
+    () => toChartData(topSuppliersByPallets, 'Palettes'),
     [topSuppliersByPallets],
   )
 
   const trailersChartData = useMemo(
-    () => toChartData(topSuppliersByTrailers, 'Trailers'),
+    () => toChartData(topSuppliersByTrailers, 'Remorques'),
     [topSuppliersByTrailers],
   )
 
   const efficiencyChartData = useMemo(
-    () => toChartData(topSuppliersByAvgPalletsPerTrailer, 'Avg Pallets / Trailer'),
+    () => toChartData(topSuppliersByAvgPalletsPerTrailer, 'Moy. palettes / remorque'),
     [topSuppliersByAvgPalletsPerTrailer],
   )
 
   const palletsOptions = useMemo(
-    () => createHorizontalBarOptions('Pallets', setSelectedSupplier),
+    () => createHorizontalBarOptions('Palettes', setSelectedSupplier),
     [],
   )
   const trailersOptions = useMemo(
-    () => createHorizontalBarOptions('Trailers', setSelectedSupplier),
+    () => createHorizontalBarOptions('Remorques', setSelectedSupplier),
     [],
   )
   const efficiencyOptions = useMemo(
-    () => createHorizontalBarOptions('Avg', setSelectedSupplier),
+    () => createHorizontalBarOptions('Moyenne', setSelectedSupplier),
     [],
   )
 
   if (isLoading) {
     return (
-      <SectionCard title="Supplier Performance">
+      <SectionCard title="Performance fournisseurs">
         <p className="dashboard-muted">Chargement des donnees fournisseurs...</p>
       </SectionCard>
     )
@@ -197,7 +197,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Supplier Performance">
+      <SectionCard title="Performance fournisseurs">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )
@@ -209,7 +209,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
     !topSuppliersByAvgPalletsPerTrailer.length
   ) {
     return (
-      <SectionCard title="Supplier Performance">
+      <SectionCard title="Performance fournisseurs">
         <p className="dashboard-muted">Aucune donnee fournisseur disponible.</p>
       </SectionCard>
     )
@@ -220,19 +220,19 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
       <section className="kpi-grid kpi-grid--three">
         <KPIBox
           icon={Building2}
-          label="Total Suppliers"
+          label="Total fournisseurs"
           value={summary.totalSuppliers}
           helper="Fournisseurs actifs"
         />
         <KPIBox
           icon={Award}
-          label="Top Supplier"
+          label="Top fournisseur"
           value={summary.topSupplier}
           helper="Classe par total palettes"
         />
         <KPIBox
           icon={Gauge}
-          label="Avg Supplier Efficiency"
+          label="Efficacite moyenne fournisseur"
           value={summary.avgSupplierEfficiency}
           helper="Pallets par remorque"
         />
@@ -272,7 +272,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
 
       <section className="chart-grid chart-grid--stacked">
         <ChartCard
-          title="Top Suppliers by Pallets"
+          title="Top fournisseurs par palettes"
           subtitle="Clique sur une barre pour drill-down"
           actions={
             <button
@@ -295,7 +295,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
         </ChartCard>
 
         <ChartCard
-          title="Top Suppliers by Trailers"
+          title="Top fournisseurs par remorques"
           subtitle="Clique sur une barre pour drill-down"
           actions={
             <button
@@ -318,7 +318,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
         </ChartCard>
 
         <ChartCard
-          title="Top Suppliers by Avg Pallets per Trailer"
+          title="Top fournisseurs par moyenne palettes/remorque"
           subtitle="Clique sur une barre pour drill-down"
           actions={
             <button
@@ -349,21 +349,21 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
         <SectionCard title={`Drill-down fournisseur: ${selectedSupplierDetails.supplier}`}>
           <div className="drilldown-grid">
             <p>
-              <strong>Total Pallets:</strong> {selectedSupplierDetails.totalPallets}
+              <strong>Total palettes:</strong> {selectedSupplierDetails.totalPallets}
             </p>
             <p>
-              <strong>Total Trailers:</strong> {selectedSupplierDetails.totalTrailers}
+              <strong>Total remorques:</strong> {selectedSupplierDetails.totalTrailers}
             </p>
             <p>
-              <strong>Avg Pallets/Trailer:</strong>{' '}
+              <strong>Moy. palettes/remorque:</strong>{' '}
               {selectedSupplierDetails.avgPalletsPerTrailer}
             </p>
             <p>
-              <strong>Average Waiting Days:</strong>{' '}
+              <strong>Moyenne jours attente:</strong>{' '}
               {selectedSupplierDetails.averageWaitingDays}
             </p>
             <p>
-              <strong>Records:</strong> {selectedSupplierDetails.records}
+              <strong>Enregistrements:</strong> {selectedSupplierDetails.records}
             </p>
           </div>
         </SectionCard>

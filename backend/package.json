@@ -9,7 +9,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "seed:admin": "node scripts/createAdmin.js",
-    "etl:excel": "node ETL/loadExcelToMongo.js"
+    "etl:excel": "node ETL/loadExcelToMongo.js",
+    "migrate:fr-fields": "node scripts/migrateFrenchDashboardFields.js",
+    "cleanup:en-fields": "node scripts/removeEnglishDashboardFields.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

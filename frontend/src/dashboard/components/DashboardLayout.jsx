@@ -19,8 +19,12 @@ function DashboardLayout({
   vehicleTypeOptions,
   notificationCount,
   onOpenAlerts,
+  showHeader = true,
+  showFilters = true,
   children,
 }) {
+  const shouldShowHeader = showHeader && activeNavItem !== 'reports'
+
   return (
     <div className="dashboard-root">
       <Sidebar
@@ -33,19 +37,22 @@ function DashboardLayout({
       />
 
       <div className="dashboard-main">
-        <TopHeader
-          title={title}
-          subtitle={subtitle}
-          filters={filters}
-          onFiltersChange={onFiltersChange}
-          onResetFilters={onResetFilters}
-          periodOptions={periodOptions}
-          supplierOptions={supplierOptions}
-          originOptions={originOptions}
-          vehicleTypeOptions={vehicleTypeOptions}
-          notificationCount={notificationCount}
-          onOpenAlerts={onOpenAlerts}
-        />
+        {shouldShowHeader ? (
+          <TopHeader
+            title={title}
+            subtitle={subtitle}
+            showFilters={showFilters}
+            filters={filters}
+            onFiltersChange={onFiltersChange}
+            onResetFilters={onResetFilters}
+            periodOptions={periodOptions}
+            supplierOptions={supplierOptions}
+            originOptions={originOptions}
+            vehicleTypeOptions={vehicleTypeOptions}
+            notificationCount={notificationCount}
+            onOpenAlerts={onOpenAlerts}
+          />
+        ) : null}
 
         <main className="dashboard-content">{children}</main>
       </div>

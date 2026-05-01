@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -8,138 +8,83 @@ import DashboardData from "../models/DashboardData.js";
 dotenv.config();
 
 const BATCH_SIZE = Number(process.env.ETL_BATCH_SIZE || 1000);
+const SHOULD_REPLACE = String(process.env.ETL_REPLACE || "").toLowerCase() === "true";
 const args = process.argv.slice(2);
-const nonFlagArgs = args.filter((arg) => !String(arg).startsWith("--"));
-const fileArg = nonFlagArgs[0] || process.env.ETL_EXCEL_PATH;
-const sheetArg = nonFlagArgs[1] || process.env.ETL_SHEET_NAME || null;
-const shouldReplace =
-  args.includes("--replace") || String(process.env.ETL_REPLACE || "").toLowerCase() === "true";
+const fileArg = args[0] || process.env.ETL_EXCEL_PATH;
+const sheetArg = args[1] || process.env.ETL_SHEET_NAME || null;
 
-function cleanText(valueRaw) {
-  if (valueRaw === null || valueRaw === undefined) {
-    return "";
+function pickFirstNonNull(...values) {
+  for (const value of values) {
+    if (value !== null && value !== undefined && String(value).trim() !== "") {
+      return value;
+    }
   }
-
-  return String(valueRaw).trim().replace(/\s+/g, " ");
+  return null;
 }
 
-function normalizeVehicleType(valueRaw) {
-  const value = cleanText(valueRaw).toLowerCase();
-  if (!value) {
-    return "";
-  }
-
-  if (["truck", "camion"].includes(value)) {
-    return "Truck";
-  }
-
-  if (value === "van") {
-    return "Van";
-  }
-
-  return cleanText(valueRaw);
-}
-
-function normalizeOrigin(valueRaw) {
-  const value = cleanText(valueRaw).toLowerCase();
-  if (!value) {
-    return "";
-  }
-
-  if (["euro", "eurol"].includes(value)) {
-    return "Euro";
-  }
-
-  if (value === "local") {
-    return "Local";
-  }
-
-  return cleanText(valueRaw);
-}
-
-function parseNumber(valueRaw) {
-  const numericValue = Number(valueRaw);
-  if (!Number.isFinite(numericValue)) {
-    return null;
-  }
-
-  return numericValue;
-}
-
-function parseDate(valueRaw) {
-  if (!valueRaw) {
-    return null;
-  }
-
-  if (valueRaw instanceof Date && !Number.isNaN(valueRaw.getTime())) {
-    return valueRaw;
-  }
-
-  const parsed = new Date(valueRaw);
-  if (Number.isNaN(parsed.getTime())) {
-    return null;
-  }
-
-  return parsed;
-}
-
-function parseTime(valueRaw) {
-  const value = cleanText(valueRaw);
-  if (!value) {
-    return "";
-  }
-
-  if (/^([01]\d|2[0-3]):([0-5]\d)$/.test(value)) {
-    return value;
-  }
-
-  if (/^([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$/.test(value)) {
-    return value.slice(0, 5);
-  }
-
-  const asDate = new Date(valueRaw);
-  if (!Number.isNaN(asDate.getTime())) {
-    const hh = String(asDate.getHours()).padStart(2, "0");
-    const mm = String(asDate.getMinutes()).padStart(2, "0");
-    return `${hh}:${mm}`;
-  }
-
-  return "";
-}
-
-function deriveDayFromDate(dateValue) {
-  if (!(dateValue instanceof Date) || Number.isNaN(dateValue.getTime())) {
-    return "";
-  }
-
-  return dateValue.toLocaleDateString("en-US", { weekday: "short" });
-}
-
-function mapExcelRowToDashboardDocument(row) {
-  const recordNo = cleanText(row.Total_N);
-  const plateNo = cleanText(row.Plaque_Immatriculation);
-  const supplier = cleanText(row.Fournisseur);
-  const arrivalDate = parseDate(row.Date_Arrivée);
-  const plannedDate = parseDate(row.Date_Prévue);
-  const unloadedDate = parseDate(row.Date_Déchargement);
-  const waitingDays = parseNumber(row["Jours_d'Attente"] ?? row.Jours_d_Attente);
+function mapRowToDashboardSchema(row = {}) {
+  const trailerNo = pickFirstNonNull(
+    row.Record_No,
+    row.RecordNo,
+    row["Record No"],
+    row.Plaque_Immatriculation,
+    row.Total_N,
+  );
+  const jour = pickFirstNonNull(row.Day, row.Jour);
+  const datePrevue = pickFirstNonNull(row.Planned_Date, row["Date_Prévue"], row.Date_Prevue);
+  const dateArrivee = pickFirstNonNull(row.Arrival_Date, row["Date_Arrivée"], row.Date_Arrivee);
+  const heureArrivee = pickFirstNonNull(row.Arrival_Time, row["Heure_Arrivée"], row.Heure_Arrivee);
+  const plaque = pickFirstNonNull(row.Plate_No, row.Plaque_Immatriculation, row.Total_N);
+  const typeVehicule = pickFirstNonNull(row.Vehicle_Type, row["Type_Véhicule"], row.Type_Vehicule);
+  const fournisseur = pickFirstNonNull(row.Supplier, row.Fournisseur);
+  const origine = pickFirstNonNull(row.Origin, row.Origine);
+  const nbPalettes = pickFirstNonNull(row.N_Pallets, row.Nb_Palettes);
+  const dateDechargement = pickFirstNonNull(
+    row.Unloaded_Date,
+    row["Date_Déchargement"],
+    row.Date_Dechargement,
+  );
+  const heureDechargement = pickFirstNonNull(
+    row.Unloaded_Time,
+    row["temp_Déchargement"],
+    row.temp_Dechargement,
+  );
+  const joursAttente = pickFirstNonNull(
+    row.Waiting_Days,
+    row["Jours_d'Attente"],
+    row.Jours_d_Attente,
+  );
 
   return {
-    Record_No: recordNo || plateNo || "",
-    Day: cleanText(row.Jour) || deriveDayFromDate(arrivalDate),
-    Planned_Date: plannedDate,
-    Arrival_Date: arrivalDate,
-    Arrival_Time: parseTime(row.Heure_Arrivée),
-    Plate_No: plateNo,
-    Vehicle_Type: normalizeVehicleType(row.Type_Véhicule),
-    Supplier: supplier,
-    Origin: normalizeOrigin(row.Origine),
-    N_Pallets: parseNumber(row.Nb_Palettes),
-    Position: cleanText(row.Position),
-    Unloaded_Date: unloadedDate,
-    Unloaded_Time: parseTime(row.temp_Déchargement ?? row.Temp_Déchargement),
-    Waiting_Days: waitingDays,
-    Entry_Source: "Excel_Import",
+    // Legacy fields for existing backend aggregations.
+    Record_No: trailerNo,
+    Day: jour,
+    Planned_Date: datePrevue,
+    Arrival_Date: dateArrivee,
+    Arrival_Time: heureArrivee,
+    Plate_No: plaque,
+    Vehicle_Type: typeVehicule,
+    Supplier: fournisseur,
+    Origin: origine,
+    N_Pallets: nbPalettes,
+    Position: pickFirstNonNull(row.Position),
+    Unloaded_Date: dateDechargement,
+    Unloaded_Time: heureDechargement,
+    Waiting_Days: joursAttente,
+    // French fields for MongoDB columns as requested.
+    Total_N: trailerNo,
+    Jour: jour,
+    "Date_Prévue": datePrevue,
+    "Date_Arrivée": dateArrivee,
+    "Heure_Arrivée": heureArrivee,
+    Plaque_Immatriculation: plaque,
+    "Type_Véhicule": typeVehicule,
+    Fournisseur: fournisseur,
+    Origine: origine,
+    Nb_Palettes: nbPalettes,
+    "Date_Déchargement": dateDechargement,
+    "temp_Déchargement": heureDechargement,
+    "Jours_d'Attente": joursAttente,
   };
 }
 
@@ -166,21 +111,13 @@ async function run() {
     throw new Error(`Sheet not found: ${targetSheetName}`);
   }
 
-  const documents = XLSX.utils.sheet_to_json(sheet, { defval: null, raw: true });
+  const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: null, raw: true });
+  const documents = rawRows.map((row) => mapRowToDashboardSchema(row));
   if (!documents.length) {
     throw new Error("No rows found in cleaned file.");
   }
 
-  const mappedDocuments = documents
-    .map(mapExcelRowToDashboardDocument)
-    .filter((doc) => doc.Arrival_Date && doc.Supplier);
-
-  if (!mappedDocuments.length) {
-    throw new Error("No valid rows after mapping (Arrival_Date and Supplier are required).");
-  }
-
   console.log(`Read ${documents.length} rows from cleaned file.`);
-  console.log(`Mapped ${mappedDocuments.length} valid rows for dashboard collection.`);
 
   if (!process.env.MONGO_URI) {
     throw new Error("Missing MONGO_URI in environment.");
@@ -188,17 +125,17 @@ async function run() {
 
   await mongoose.connect(process.env.MONGO_URI);
   try {
-    if (shouldReplace) {
+    if (SHOULD_REPLACE) {
       const deleteResult = await DashboardData.deleteMany({});
-      console.log(`Deleted ${deleteResult.deletedCount} existing records before import.`);
+      console.log(`Replace mode enabled: deleted ${deleteResult.deletedCount} existing records.`);
     }
 
     let inserted = 0;
-    for (let i = 0; i < mappedDocuments.length; i += BATCH_SIZE) {
-      const batch = mappedDocuments.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < documents.length; i += BATCH_SIZE) {
+      const batch = documents.slice(i, i + BATCH_SIZE);
       await DashboardData.insertMany(batch, { ordered: false });
       inserted += batch.length;
-      console.log(`Inserted ${inserted}/${mappedDocuments.length}`);
+      console.log(`Inserted ${inserted}/${documents.length}`);
     }
 
     console.log(`ETL finished. Inserted ${inserted} records.`);
