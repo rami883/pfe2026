@@ -6,10 +6,9 @@ import {
   Package,
   Target,
   TrendingDown,
-  TrendingUp,
   Trophy,
 } from 'lucide-react'
-import { Line } from 'react-chartjs-2'
+import { Bar } from 'react-chartjs-2'
 import '../chartSetup'
 import KPIBox from '../components/KPIBox'
 import ChartCard from '../components/ChartCard'
@@ -74,7 +73,6 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
     totalPallets: 0,
     totalReceptions: 0,
     totalTrailers: 0,
-    palletsPerTrailer: 0,
     averageWaitingDays: 0,
     onTimeUnloadingRate: 0,
     delayRate: 0,
@@ -83,7 +81,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
   }
 
   const trailersByWeek = payload?.trailersByWeek || []
-  const palletsPerTrailerByWeek = payload?.palletsPerTrailerByWeek || []
+  const palletsByWeek = payload?.palletsByWeek || []
 
   const selectedWeekInsights = useMemo(() => {
     if (!selectedWeek) {
@@ -91,7 +89,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
     }
 
     const trailersItem = trailersByWeek.find((item) => item.week === selectedWeek)
-    const palletsItem = palletsPerTrailerByWeek.find((item) => item.week === selectedWeek)
+    const palletsItem = palletsByWeek.find((item) => item.week === selectedWeek)
 
     if (!trailersItem && !palletsItem) {
       return null
@@ -100,12 +98,9 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
     return {
       week: selectedWeek,
       trailers: trailersItem?.trailers || 0,
-      palletsPerTrailer: palletsItem?.palletsPerTrailer || 0,
-      estimatedPallets: Number(
-        ((trailersItem?.trailers || 0) * (palletsItem?.palletsPerTrailer || 0)).toFixed(2),
-      ),
+      pallets: palletsItem?.pallets || 0,
     }
-  }, [selectedWeek, trailersByWeek, palletsPerTrailerByWeek])
+  }, [selectedWeek, trailersByWeek, palletsByWeek])
 
   const trailersLineData = useMemo(
     () => ({
@@ -114,8 +109,8 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         {
           label: 'Remorques',
           data: trailersByWeek.map((item) => item.trailers),
-          borderColor: '#d71920',
-          backgroundColor: 'rgba(215, 25, 32, 0.14)',
+          borderColor: '#c1121a',
+          backgroundColor: 'rgba(193, 18, 26, 0.2)',
           pointRadius: 3,
           pointHoverRadius: 5,
           fill: true,
@@ -128,13 +123,13 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   const palletsLineData = useMemo(
     () => ({
-      labels: palletsPerTrailerByWeek.map((item) => item.week),
+      labels: palletsByWeek.map((item) => item.week),
       datasets: [
         {
-          label: 'Palettes / remorque',
-          data: palletsPerTrailerByWeek.map((item) => item.palletsPerTrailer),
-          borderColor: '#b51218',
-          backgroundColor: 'rgba(181, 18, 24, 0.1)',
+          label: 'Palettes',
+          data: palletsByWeek.map((item) => item.pallets),
+          borderColor: '#9f0f14',
+          backgroundColor: 'rgba(159, 15, 20, 0.18)',
           pointRadius: 3,
           pointHoverRadius: 5,
           fill: true,
@@ -142,7 +137,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         },
       ],
     }),
-    [palletsPerTrailerByWeek],
+    [palletsByWeek],
   )
 
   const lineOptions = useMemo(
@@ -200,7 +195,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
     )
   }
 
-  if (!trailersByWeek.length && !palletsPerTrailerByWeek.length) {
+  if (!trailersByWeek.length && !palletsByWeek.length) {
     return (
       <SectionCard title="Vue executive">
         <p className="dashboard-muted">Aucune donnee disponible pour cette periode.</p>
@@ -228,12 +223,6 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
           label="Total remorques"
           value={formatNumber(kpis.totalTrailers)}
           helper="Remorques enregistrees"
-        />
-        <KPIBox
-          icon={TrendingUp}
-          label="Palettes par remorque"
-          value={kpis.palletsPerTrailer}
-          helper="Moyenne de chargement"
         />
         <KPIBox
           icon={Clock3}
@@ -281,13 +270,13 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
           }
         >
           <div className="chart-canvas-wrap">
-            <Line ref={trailersChartRef} data={trailersLineData} options={lineOptions} />
+            <Bar ref={trailersChartRef} data={trailersLineData} options={lineOptions} />
           </div>
         </ChartCard>
 
         <ChartCard
-          title="Palettes par remorque par semaine"
-          subtitle="Suivi de l'efficacite de remplissage"
+          title="Palettes par semaine"
+          subtitle="Somme des palettes recues par semaine"
           actions={
             <button
               type="button"
@@ -295,7 +284,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
               onClick={() =>
                 downloadChartAsPng(
                   palletsChartRef,
-                  'executive-pallets-per-trailer-by-week.png',
+                  'executive-pallets-by-week.png',
                 )
               }
             >
@@ -304,7 +293,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
           }
         >
           <div className="chart-canvas-wrap">
-            <Line ref={palletsChartRef} data={palletsLineData} options={lineOptions} />
+            <Bar ref={palletsChartRef} data={palletsLineData} options={lineOptions} />
           </div>
         </ChartCard>
       </section>
@@ -316,11 +305,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
               <strong>Remorques:</strong> {formatNumber(selectedWeekInsights.trailers)}
             </p>
             <p>
-              <strong>Palettes/remorque:</strong> {selectedWeekInsights.palletsPerTrailer}
-            </p>
-            <p>
-              <strong>Pallets estimes:</strong>{' '}
-              {formatNumber(selectedWeekInsights.estimatedPallets)}
+              <strong>Palettes:</strong> {formatNumber(selectedWeekInsights.pallets)}
             </p>
           </div>
         </SectionCard>

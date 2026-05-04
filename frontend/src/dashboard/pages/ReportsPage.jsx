@@ -40,9 +40,8 @@ function ReportsPage({ filters, refreshTick = 0 }) {
 
   const tableColumns = useMemo(
     () => [
-      { key: 'recordNo', header: 'Numero de remorque' },
-      { key: 'supplier', header: 'Fournisseur' },
       { key: 'arrivalDate', header: "Date d'arrivee" },
+      { key: 'supplier', header: 'Fournisseur' },
       { key: 'arrivalTime', header: "Heure d'arrivee" },
       { key: 'pallets', header: 'Palettes' },
       { key: 'vehicleType', header: 'Type de vehicule' },

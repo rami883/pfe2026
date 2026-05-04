@@ -45,7 +45,7 @@ const PERIOD_OPTIONS = [
 
 function createDefaultFilters() {
   return {
-    days: 365,
+    days: 7,
     fromDate: '',
     toDate: '',
     suppliers: [],

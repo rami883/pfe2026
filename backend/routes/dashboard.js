@@ -25,7 +25,7 @@ function requireReceptionWriteAccess(req, res, next) {
 function parseDaysQuery(daysRaw) {
   const parsed = Number(daysRaw)
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 365
+    return 7
   }
 
   return Math.min(Math.floor(parsed), 3650)
@@ -55,6 +55,14 @@ function normalizeOrigin(valueRaw) {
   }
 
   return ''
+}
+
+function normalizeSupplierName(valueRaw) {
+  const value = String(valueRaw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, '')
+  return value
 }
 
 function parsePalletCount(valueRaw) {
@@ -187,30 +195,43 @@ function getBaseAddFieldsStage() {
   return {
     $addFields: {
       supplierNormalized: {
-        $trim: {
+        $replaceAll: {
           input: {
-            $convert: {
-              input: { $ifNull: ['$Supplier', ''] },
-              input: { $ifNull: ['$Fournisseur', ''] },
-              to: 'string',
-              onError: '',
-              onNull: '',
-            },
-          },
-        },
-      },
-      supplierNormalizedLower: {
-        $toLower: {
-          $trim: {
-            input: {
-              $convert: {
-                input: { $ifNull: ['$Fournisseur', ''] },
-                to: 'string',
-                onError: '',
-                onNull: '',
+            $toLower: {
+              $trim: {
+                input: {
+                  $convert: {
+                    input: { $ifNull: ['$Fournisseur', '$Supplier'] },
+                    to: 'string',
+                    onError: '',
+                    onNull: '',
+                  },
+                },
               },
             },
           },
+          find: '-',
+          replacement: '',
+        },
+      },
+      supplierNormalizedLower: {
+        $replaceAll: {
+          input: {
+            $toLower: {
+              $trim: {
+                input: {
+                  $convert: {
+                    input: { $ifNull: ['$Fournisseur', '$Supplier'] },
+                    to: 'string',
+                    onError: '',
+                    onNull: '',
+                  },
+                },
+              },
+            },
+          },
+          find: '-',
+          replacement: '',
         },
       },
       trailerNormalized: {
@@ -223,6 +244,44 @@ function getBaseAddFieldsStage() {
               onNull: '',
             },
           },
+        },
+      },
+      trailerNormalizedCanonical: {
+        $replaceAll: {
+          input: {
+            $replaceAll: {
+              input: {
+                $replaceAll: {
+                  input: {
+                    $replaceAll: {
+                      input: {
+                        $toUpper: {
+                          $trim: {
+                            input: {
+                              $convert: {
+                                input: { $ifNull: ['$Total_N', '$Plaque_Immatriculation'] },
+                                to: 'string',
+                                onError: '',
+                                onNull: '',
+                              },
+                            },
+                          },
+                        },
+                      },
+                      find: ' ',
+                      replacement: '',
+                    },
+                  },
+                  find: '-',
+                  replacement: '',
+                },
+              },
+              find: '_',
+              replacement: '',
+            },
+          },
+          find: '/',
+          replacement: '',
         },
       },
       originNormalized: {
@@ -476,7 +535,7 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
     const arrivalDateAsDate = parseArrivalDate(arrivalDate)
     const arrivalTime = String(req.body.arrivalTime || '').trim()
     const trailerPlate = String(req.body.trailerPlate || '').trim()
-    const supplier = String(req.body.supplier || '').trim()
+    const supplier = normalizeSupplierName(req.body.supplier)
     const position = String(req.body.position || '').trim()
     const transportType = normalizeTransportType(req.body.transportType)
     const origin = normalizeOrigin(req.body.origin)
@@ -625,7 +684,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
     const filters = parseDashboardFilters(req.query)
     const baseMatch = buildBaseMatch(filters)
 
-    const [kpiResult, topSupplierResult, trailersByWeekResult, palletsPerTrailerByWeekResult] =
+    const [kpiResult, topSupplierResult, trailersByWeekResult, palletsByWeekResult] =
       await Promise.all([
         DashboardData.aggregate([
           getBaseAddFieldsStage(),
@@ -668,18 +727,15 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
                   ],
                 },
               },
-              trailersSet: { $addToSet: '$trailerNormalized' },
+              totalReceptions: { $sum: 1 },
             },
           },
           {
             $project: {
               _id: 0,
               totalPallets: { $round: ['$totalPallets', 2] },
-              totalTrailers: {
-                $size: {
-                  $setDifference: ['$trailersSet', ['', null]],
-                },
-              },
+              totalReceptions: 1,
+              totalTrailers: '$totalReceptions',
               averageWaitingDays: {
                 $round: [
                   {
@@ -724,8 +780,8 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
                 $round: [
                   {
                     $cond: [
-                      { $gt: ['$totalTrailers', 0] },
-                      { $divide: ['$totalPallets', '$totalTrailers'] },
+                      { $gt: ['$totalReceptions', 0] },
+                      { $divide: ['$totalPallets', '$totalReceptions'] },
                       0,
                     ],
                   },
@@ -766,7 +822,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
                 year: { $isoWeekYear: '$arrivalDateNormalized' },
                 week: { $isoWeek: '$arrivalDateNormalized' },
               },
-              trailersSet: { $addToSet: '$trailerNormalized' },
+              receptions: { $sum: 1 },
             },
           },
           { $sort: { '_id.year': 1, '_id.week': 1 } },
@@ -774,11 +830,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
             $project: {
               _id: 0,
               week: weekLabelProjection('$_id'),
-              trailers: {
-                $size: {
-                  $setDifference: ['$trailersSet', ['', null]],
-                },
-              },
+              trailers: '$receptions',
             },
           },
         ]),
@@ -793,7 +845,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
                 week: { $isoWeek: '$arrivalDateNormalized' },
               },
               totalPallets: { $sum: '$palletsNumeric' },
-              trailersSet: { $addToSet: '$trailerNormalized' },
+              receptions: { $sum: 1 },
             },
           },
           { $sort: { '_id.year': 1, '_id.week': 1 } },
@@ -801,36 +853,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
             $project: {
               _id: 0,
               week: weekLabelProjection('$_id'),
-              palletsPerTrailer: {
-                $round: [
-                  {
-                    $cond: [
-                      {
-                        $gt: [
-                          {
-                            $size: {
-                              $setDifference: ['$trailersSet', ['', null]],
-                            },
-                          },
-                          0,
-                        ],
-                      },
-                      {
-                        $divide: [
-                          '$totalPallets',
-                          {
-                            $size: {
-                              $setDifference: ['$trailersSet', ['', null]],
-                            },
-                          },
-                        ],
-                      },
-                      0,
-                    ],
-                  },
-                  2,
-                ],
-              },
+              pallets: { $round: ['$totalPallets', 2] },
             },
           },
         ]),
@@ -840,6 +863,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
     const kpis = {
       ...(kpiResult[0] || {
         totalPallets: 0,
+        totalReceptions: 0,
         totalTrailers: 0,
         palletsPerTrailer: 0,
         averageWaitingDays: 0,
@@ -853,7 +877,7 @@ router.get('/executive', protect, requireDashboardAccess, async (req, res) => {
     return res.status(200).json({
       kpis,
       trailersByWeek: trailersByWeekResult,
-      palletsPerTrailerByWeek: palletsPerTrailerByWeekResult,
+      palletsByWeek: palletsByWeekResult,
     })
   } catch (error) {
     console.error('Dashboard executive error:', error)
@@ -872,7 +896,7 @@ router.get('/suppliers/performance', protect, requireDashboardAccess, async (req
         $group: {
           _id: '$supplierNormalized',
           totalPallets: { $sum: '$palletsNumeric' },
-          trailersSet: { $addToSet: '$trailerNormalized' },
+          totalReceptions: { $sum: 1 },
           records: { $sum: 1 },
           waitingDaysTotal: { $sum: { $ifNull: ['$waitingDaysNumeric', 0] } },
           waitingDaysCount: {
@@ -887,11 +911,7 @@ router.get('/suppliers/performance', protect, requireDashboardAccess, async (req
           _id: 0,
           supplier: '$_id',
           totalPallets: { $round: ['$totalPallets', 2] },
-          totalTrailers: {
-            $size: {
-              $setDifference: ['$trailersSet', ['', null]],
-            },
-          },
+          totalTrailers: '$totalReceptions',
           records: 1,
           averageWaitingDays: {
             $round: [
@@ -1001,7 +1021,8 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
                 },
               },
             },
-            trailersSet: { $addToSet: '$trailerNormalized' },
+            count: { $sum: 1 },
+            pallets: { $sum: '$palletsNumeric' },
           },
         },
         { $sort: { '_id.day': 1 } },
@@ -1009,11 +1030,8 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           $project: {
             _id: 0,
             day: '$_id.day',
-            count: {
-              $size: {
-                $setDifference: ['$trailersSet', ['', null]],
-              },
-            },
+            count: 1,
+            pallets: { $round: ['$pallets', 2] },
           },
         },
       ]),
@@ -1027,7 +1045,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
               year: { $isoWeekYear: '$arrivalDateNormalized' },
               week: { $isoWeek: '$arrivalDateNormalized' },
             },
-            trailersSet: { $addToSet: '$trailerNormalized' },
+            count: { $sum: 1 },
           },
         },
         { $sort: { '_id.year': 1, '_id.week': 1 } },
@@ -1035,11 +1053,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           $project: {
             _id: 0,
             week: weekLabelProjection('$_id'),
-            count: {
-              $size: {
-                $setDifference: ['$trailersSet', ['', null]],
-              },
-            },
+            count: 1,
           },
         },
       ]),

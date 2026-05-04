@@ -98,7 +98,6 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
   const [selectedSupplier, setSelectedSupplier] = useState('')
   const palletsChartRef = useRef(null)
   const trailersChartRef = useRef(null)
-  const efficiencyChartRef = useRef(null)
 
   useEffect(() => {
     let mounted = true
@@ -138,6 +137,15 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
     avgSupplierEfficiency: 0,
   }
   const suppliers = payload?.suppliers || []
+  const supplierCount = suppliers.length
+  const topNChoices = [5, 10, 15, 20].filter((value) => value <= supplierCount)
+  const effectiveTopNChoices = topNChoices.length ? topNChoices : [Math.max(supplierCount, 1)]
+
+  useEffect(() => {
+    if (!effectiveTopNChoices.includes(topN)) {
+      setTopN(effectiveTopNChoices[effectiveTopNChoices.length - 1])
+    }
+  }, [effectiveTopNChoices, topN])
 
   const topSuppliersByPallets = useMemo(
     () => pickTopByMetric(suppliers, 'totalPallets', topN, sortOrder),
@@ -146,11 +154,6 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
 
   const topSuppliersByTrailers = useMemo(
     () => pickTopByMetric(suppliers, 'totalTrailers', topN, sortOrder),
-    [sortOrder, suppliers, topN],
-  )
-
-  const topSuppliersByAvgPalletsPerTrailer = useMemo(
-    () => pickTopByMetric(suppliers, 'avgPalletsPerTrailer', topN, sortOrder),
     [sortOrder, suppliers, topN],
   )
 
@@ -169,11 +172,6 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
     [topSuppliersByTrailers],
   )
 
-  const efficiencyChartData = useMemo(
-    () => toChartData(topSuppliersByAvgPalletsPerTrailer, 'Moy. palettes / remorque'),
-    [topSuppliersByAvgPalletsPerTrailer],
-  )
-
   const palletsOptions = useMemo(
     () => createHorizontalBarOptions('Palettes', setSelectedSupplier),
     [],
@@ -182,11 +180,6 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
     () => createHorizontalBarOptions('Remorques', setSelectedSupplier),
     [],
   )
-  const efficiencyOptions = useMemo(
-    () => createHorizontalBarOptions('Moyenne', setSelectedSupplier),
-    [],
-  )
-
   if (isLoading) {
     return (
       <SectionCard title="Performance fournisseurs">
@@ -205,8 +198,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
 
   if (
     !topSuppliersByPallets.length &&
-    !topSuppliersByTrailers.length &&
-    !topSuppliersByAvgPalletsPerTrailer.length
+    !topSuppliersByTrailers.length
   ) {
     return (
       <SectionCard title="Performance fournisseurs">
@@ -260,10 +252,11 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
                 value={topN}
                 onChange={(event) => setTopN(Number(event.target.value))}
               >
-                <option value={5}>Top 5</option>
-                <option value={10}>Top 10</option>
-                <option value={15}>Top 15</option>
-                <option value={20}>Top 20</option>
+                {effectiveTopNChoices.map((value) => (
+                  <option key={value} value={value}>
+                    {`Top ${value}`}
+                  </option>
+                ))}
               </select>
             </div>
           </label>
@@ -290,7 +283,13 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
           }
         >
           <div className="chart-canvas-wrap chart-canvas-wrap--bar">
-            <Bar ref={palletsChartRef} data={palletsChartData} options={palletsOptions} />
+            <Bar
+              key={`pallets-${sortOrder}-${topN}`}
+              redraw
+              ref={palletsChartRef}
+              data={palletsChartData}
+              options={palletsOptions}
+            />
           </div>
         </ChartCard>
 
@@ -313,36 +312,16 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
           }
         >
           <div className="chart-canvas-wrap chart-canvas-wrap--bar">
-            <Bar ref={trailersChartRef} data={trailersChartData} options={trailersOptions} />
-          </div>
-        </ChartCard>
-
-        <ChartCard
-          title="Top fournisseurs par moyenne palettes/remorque"
-          subtitle="Clique sur une barre pour drill-down"
-          actions={
-            <button
-              type="button"
-              className="dashboard-chart-btn"
-              onClick={() =>
-                downloadChartAsPng(
-                  efficiencyChartRef,
-                  'supplier-performance-efficiency-chart.png',
-                )
-              }
-            >
-              Export PNG
-            </button>
-          }
-        >
-          <div className="chart-canvas-wrap chart-canvas-wrap--bar">
             <Bar
-              ref={efficiencyChartRef}
-              data={efficiencyChartData}
-              options={efficiencyOptions}
+              key={`trailers-${sortOrder}-${topN}`}
+              redraw
+              ref={trailersChartRef}
+              data={trailersChartData}
+              options={trailersOptions}
             />
           </div>
         </ChartCard>
+
       </section>
 
       {selectedSupplierDetails ? (

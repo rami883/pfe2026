@@ -138,6 +138,74 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     [receptionsByDay],
   )
 
+  const receptionsAndPalletsByDayData = useMemo(
+    () => ({
+      labels: receptionsByDay.map((item) => item.day),
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Receptions',
+          data: receptionsByDay.map((item) => item.count),
+          backgroundColor: 'rgba(127, 11, 16, 0.32)',
+          borderColor: '#7f0b10',
+          borderWidth: 1,
+          yAxisID: 'y',
+        },
+        {
+          type: 'line',
+          label: 'Palettes',
+          data: receptionsByDay.map((item) => Number(item.pallets || 0)),
+          borderColor: '#9f0f14',
+          backgroundColor: 'rgba(159, 15, 20, 0.18)',
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          fill: false,
+          tension: 0.3,
+          yAxisID: 'y1',
+        },
+      ],
+    }),
+    [receptionsByDay],
+  )
+
+  const receptionsAndPalletsByDayOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          backgroundColor: '#111827',
+          titleColor: '#ffffff',
+          bodyColor: '#e5e7eb',
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#6b7280' },
+          grid: { color: 'rgba(148, 163, 184, 0.18)' },
+        },
+        y: {
+          type: 'linear',
+          position: 'left',
+          beginAtZero: true,
+          ticks: { color: '#6b7280', precision: 0 },
+          grid: { color: 'rgba(148, 163, 184, 0.18)' },
+          title: { display: true, text: 'Receptions' },
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          beginAtZero: true,
+          ticks: { color: '#6b7280', precision: 0 },
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'Palettes' },
+        },
+      },
+    }),
+    [],
+  )
+
   const receptionsByWeekData = useMemo(
     () => ({
       labels: receptionsByWeek.map((item) => item.week),
@@ -145,8 +213,8 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
         {
           label: 'Receptions',
           data: receptionsByWeek.map((item) => item.count),
-          borderColor: '#b51218',
-          backgroundColor: 'rgba(181, 18, 24, 0.1)',
+          borderColor: '#7f0b10',
+          backgroundColor: 'rgba(127, 11, 16, 0.32)',
           fill: true,
           tension: 0.28,
         },
@@ -200,6 +268,60 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     [originDistribution],
   )
 
+  const latestArrivalDay = useMemo(() => {
+    const firstWithDate = recentShipments.find((item) => String(item?.arrivalDate || '').trim())
+    return firstWithDate ? String(firstWithDate.arrivalDate).trim() : ''
+  }, [recentShipments])
+
+  const lastDayReceptions = useMemo(
+    () =>
+      recentShipments.filter(
+        (item) => String(item?.arrivalDate || '').trim() === latestArrivalDay,
+      ),
+    [recentShipments, latestArrivalDay],
+  )
+
+  const receptionsTimelineData = useMemo(
+    () => ({
+      labels: lastDayReceptions.map(() => latestArrivalDay || '-'),
+      datasets: [
+        {
+          label: 'Palettes',
+          data: lastDayReceptions.map((item) => Number(item.pallets || 0)),
+          receptionTimes: lastDayReceptions.map((item) => String(item.arrivalTime || '-').trim()),
+          backgroundColor: 'rgba(127, 11, 16, 0.32)',
+          borderColor: '#7f0b10',
+          borderWidth: 1,
+        },
+      ],
+    }),
+    [lastDayReceptions, latestArrivalDay],
+  )
+
+  const receptionsTimelineOptions = useMemo(() => {
+    const options = baseAxisOptions()
+    options.plugins = {
+      ...(options.plugins || {}),
+      tooltip: {
+        backgroundColor: '#111827',
+        titleColor: '#ffffff',
+        bodyColor: '#e5e7eb',
+        callbacks: {
+          title(items) {
+            return items?.[0]?.label || latestArrivalDay || '-'
+          },
+          label(context) {
+            const value = Number(context?.raw || 0)
+            const time =
+              context?.dataset?.receptionTimes?.[context?.dataIndex] || '-'
+            return `Heure: ${time} | Palettes: ${value}`
+          },
+        },
+      },
+    }
+    return options
+  }, [latestArrivalDay])
+
   if (isLoading) {
     return (
       <SectionCard title="Suivi des operations">
@@ -233,13 +355,17 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     <>
       <section className="chart-grid chart-grid--operations">
         <ChartCard
-          title="Receptions de remorques par jour"
+          title="Receptions et palettes par date d'arrivee"
+          subtitle="Vue combinee par jour"
           actions={
             <button
               type="button"
               className="dashboard-chart-btn"
               onClick={() =>
-                downloadChartAsPng(receptionsDayRef, 'operations-receptions-by-day.png')
+                downloadChartAsPng(
+                  receptionsDayRef,
+                  'operations-receptions-and-pallets-by-day.png',
+                )
               }
             >
               Export PNG
@@ -247,34 +373,20 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
           }
         >
           <div className="chart-canvas-wrap">
-            <Line
+            <Bar
               ref={receptionsDayRef}
-              data={receptionsByDayData}
-              options={baseAxisOptions()}
+              data={receptionsAndPalletsByDayData}
+              options={receptionsAndPalletsByDayOptions}
             />
           </div>
         </ChartCard>
 
         <ChartCard
-          title="Receptions de remorques par semaine"
-          actions={
-            <button
-              type="button"
-              className="dashboard-chart-btn"
-              onClick={() =>
-                downloadChartAsPng(receptionsWeekRef, 'operations-receptions-by-week.png')
-              }
-            >
-              Export PNG
-            </button>
-          }
+          title="Nouvelles receptions: palettes et heure d'arrivee"
+          subtitle="Dernier jour d'arrivee uniquement"
         >
           <div className="chart-canvas-wrap">
-            <Line
-              ref={receptionsWeekRef}
-              data={receptionsByWeekData}
-              options={baseAxisOptions()}
-            />
+            <Bar data={receptionsTimelineData} options={receptionsTimelineOptions} />
           </div>
         </ChartCard>
 
