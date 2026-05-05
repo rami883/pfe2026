@@ -80,7 +80,8 @@ function parseArrivalDate(valueRaw) {
     return null
   }
 
-  const parsed = new Date(`${value}T00:00:00`)
+  const isIsoDateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(value)
+  const parsed = isIsoDateOnly ? new Date(`${value}T00:00:00Z`) : new Date(value)
   if (Number.isNaN(parsed.getTime())) {
     return null
   }
@@ -89,8 +90,15 @@ function parseArrivalDate(valueRaw) {
 }
 
 function formatDateValue(valueRaw) {
+  const formatUtcDate = (date) => {
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+    const day = String(date.getUTCDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
   if (valueRaw instanceof Date && !Number.isNaN(valueRaw.getTime())) {
-    return valueRaw.toISOString().slice(0, 10)
+    return formatUtcDate(valueRaw)
   }
 
   const value = String(valueRaw || '').trim()
@@ -98,12 +106,14 @@ function formatDateValue(valueRaw) {
     return ''
   }
 
-  const parsed = new Date(value)
+  const isIsoDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value)
+  const parsed = isIsoDateOnly ? new Date(`${value}T00:00:00Z`) : new Date(value)
+
   if (Number.isNaN(parsed.getTime())) {
     return value
   }
 
-  return parsed.toISOString().slice(0, 10)
+  return formatUtcDate(parsed)
 }
 
 function deriveDayFromDate(dateRaw) {
