@@ -10,6 +10,9 @@
     "start": "node server.js",
     "seed:admin": "node scripts/createAdmin.js",
     "etl:excel": "node ETL/loadExcelToMongo.js",
+    "etl:ml": "node ETL/loadMLPredictionsToMongo.js --replace",
+    "etl:ml:append": "node ETL/loadMLPredictionsToMongo.js --append",
+    "ml:sync": "node scripts/syncMlResultsFromFiles.js",
     "migrate:fr-fields": "node scripts/migrateFrenchDashboardFields.js",
     "cleanup:en-fields": "node scripts/removeEnglishDashboardFields.js"
   },

@@ -18,7 +18,7 @@ function getRequestHeaders() {
 
 function normalizeFilters(filters = {}) {
   return {
-    days: Number(filters.days || 7),
+    days: Number(filters.days || 365),
     fromDate: String(filters.fromDate || '').trim(),
     toDate: String(filters.toDate || '').trim(),
     suppliers: Array.isArray(filters.suppliers)
@@ -93,7 +93,7 @@ async function dashboardPost(path, payload = {}) {
   }
 }
 
-export async function getSupplierStats(days = 7) {
+export async function getSupplierStats(days = 365) {
   return dashboardGet('/api/dashboard/supplier', { days })
 }
 
@@ -127,4 +127,8 @@ export async function createReception(payload = {}) {
 
 export async function getReceptionAlerts(limit = 30) {
   return dashboardGet('/api/dashboard/alerts/receptions', { limit })
+}
+
+export async function getImportCostAnalytics(limit = 500) {
+  return dashboardGet('/api/dashboard/analytics/import-costs', { limit })
 }

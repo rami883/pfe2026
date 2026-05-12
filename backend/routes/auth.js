@@ -181,6 +181,51 @@ router.get("/pending", protect, adminOnly, async (_req, res) => {
   }
 });
 
+router.get("/", protect, adminOnly, async (_req, res) => {
+  try {
+    const users = await User.find({})
+      .select("-password")
+      .sort({ createdAt: -1, _id: -1 });
+
+    return res.status(200).json({ users });
+  } catch (error) {
+    console.error("Fetch Users Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
+router.delete("/:userId", protect, adminOnly, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ message: "Identifiant utilisateur invalide." });
+    }
+
+    if (String(req.user?._id) === String(userId)) {
+      return res
+        .status(400)
+        .json({ message: "Vous ne pouvez pas supprimer votre propre compte." });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    await User.deleteOne({ _id: userId });
+
+    return res.status(200).json({
+      message: "Utilisateur supprime avec succes.",
+      user: buildUserPayload(user),
+    });
+  } catch (error) {
+    console.error("Delete User Error:", error);
+    return res.status(500).json({ message: "Erreur serveur." });
+  }
+});
+
 router.patch("/pending/:userId/approve", protect, adminOnly, async (req, res) => {
   try {
     const user = await findApprovableUserById(req.params.userId);

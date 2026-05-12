@@ -1,10 +1,28 @@
 ﻿import express from 'express'
+import fs from 'node:fs'
+import path from 'node:path'
+import XLSX from 'xlsx'
 import DashboardData from '../models/DashboardData.js'
 import { protect } from '../middleware/auth.js'
 
 const router = express.Router()
 const ALLOWED_ROLES = new Set(['admin', 'directeur'])
 const RECEPTION_WRITE_ROLES = new Set(['admin', 'gestionnaire'])
+
+function resolveProjectArtifactPath(fileName) {
+  const candidates = [
+    path.resolve(process.cwd(), fileName),
+    path.resolve(process.cwd(), '..', fileName),
+  ]
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  return candidates[0]
+}
 
 function requireDashboardAccess(req, res, next) {
   if (!req.user || !ALLOWED_ROLES.has(req.user.role)) {
@@ -211,7 +229,7 @@ function getBaseAddFieldsStage() {
               $trim: {
                 input: {
                   $convert: {
-                    input: { $ifNull: ['$Fournisseur', '$Supplier'] },
+                    input: { $ifNull: ['$Supplier', '$Fournisseur'] },
                     to: 'string',
                     onError: '',
                     onNull: '',
@@ -231,7 +249,7 @@ function getBaseAddFieldsStage() {
               $trim: {
                 input: {
                   $convert: {
-                    input: { $ifNull: ['$Fournisseur', '$Supplier'] },
+                    input: { $ifNull: ['$Supplier', '$Fournisseur'] },
                     to: 'string',
                     onError: '',
                     onNull: '',
@@ -248,7 +266,9 @@ function getBaseAddFieldsStage() {
         $trim: {
           input: {
             $convert: {
-              input: { $ifNull: ['$Total_N', '$Plaque_Immatriculation'] },
+              input: {
+                $ifNull: ['$Record_No', { $ifNull: ['$Total_N', { $ifNull: ['$Plate_No', '$Plaque_Immatriculation'] }] }],
+              },
               to: 'string',
               onError: '',
               onNull: '',
@@ -269,7 +289,9 @@ function getBaseAddFieldsStage() {
                           $trim: {
                             input: {
                               $convert: {
-                                input: { $ifNull: ['$Total_N', '$Plaque_Immatriculation'] },
+                                input: {
+                                  $ifNull: ['$Record_No', { $ifNull: ['$Total_N', { $ifNull: ['$Plate_No', '$Plaque_Immatriculation'] }] }],
+                                },
                                 to: 'string',
                                 onError: '',
                                 onNull: '',
@@ -302,7 +324,7 @@ function getBaseAddFieldsStage() {
                 $trim: {
                   input: {
                     $convert: {
-                      input: { $ifNull: ['$Origine', ''] },
+                      input: { $ifNull: ['$Origin', '$Origine'] },
                       to: 'string',
                       onError: '',
                       onNull: '',
@@ -337,7 +359,7 @@ function getBaseAddFieldsStage() {
                 $trim: {
                   input: {
                     $convert: {
-                      input: { $ifNull: ['$Origine', ''] },
+                      input: { $ifNull: ['$Origin', '$Origine'] },
                       to: 'string',
                       onError: '',
                       onNull: '',
@@ -368,7 +390,7 @@ function getBaseAddFieldsStage() {
         $trim: {
           input: {
             $convert: {
-              input: { $ifNull: ['$Type_Véhicule', ''] },
+              input: { $ifNull: ['$Vehicle_Type', '$Type_Véhicule'] },
               to: 'string',
               onError: '',
               onNull: '',
@@ -381,7 +403,7 @@ function getBaseAddFieldsStage() {
           $trim: {
             input: {
               $convert: {
-                input: { $ifNull: ['$Type_Véhicule', ''] },
+                input: { $ifNull: ['$Vehicle_Type', '$Type_Véhicule'] },
                 to: 'string',
                 onError: '',
                 onNull: '',
@@ -392,7 +414,7 @@ function getBaseAddFieldsStage() {
       },
       palletsNumeric: {
         $convert: {
-          input: { $ifNull: ['$Nb_Palettes', 0] },
+          input: { $ifNull: ['$N_Pallets', '$Nb_Palettes'] },
           to: 'double',
           onError: 0,
           onNull: 0,
@@ -400,7 +422,7 @@ function getBaseAddFieldsStage() {
       },
       waitingDaysNumeric: {
         $convert: {
-          input: { $ifNull: ["$Jours_d'Attente", null] },
+          input: { $ifNull: ['$Waiting_Days', "$Jours_d'Attente"] },
           to: 'double',
           onError: null,
           onNull: null,
@@ -408,7 +430,7 @@ function getBaseAddFieldsStage() {
       },
       arrivalDateNormalized: {
         $convert: {
-          input: { $ifNull: ['$Date_Arrivée', null] },
+          input: { $ifNull: ['$Arrival_Date', '$Date_Arrivée'] },
           to: 'date',
           onError: null,
           onNull: null,
@@ -418,7 +440,7 @@ function getBaseAddFieldsStage() {
         $trim: {
           input: {
             $convert: {
-              input: { $ifNull: ['$Heure_Arrivée', ''] },
+              input: { $ifNull: ['$Arrival_Time', '$Heure_Arrivée'] },
               to: 'string',
               onError: '',
               onNull: '',
@@ -428,7 +450,7 @@ function getBaseAddFieldsStage() {
       },
       arrivalTimeAsDate: {
         $convert: {
-          input: { $ifNull: ['$Heure_Arrivée', null] },
+          input: { $ifNull: ['$Arrival_Time', '$Heure_Arrivée'] },
           to: 'date',
           onError: null,
           onNull: null,
@@ -568,19 +590,19 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
     }
 
     const created = await DashboardData.create({
-      Total_N: trailerPlate,
-      Jour: deriveDayFromDate(arrivalDateAsDate),
-      'Date_Prévue': arrivalDateAsDate,
-      'Date_Arrivée': arrivalDateAsDate,
-      'Heure_Arrivée': arrivalTime,
-      Plaque_Immatriculation: trailerPlate,
-      'Type_Véhicule': transportType,
-      Fournisseur: supplier,
-      Origine: origin,
-      Nb_Palettes: palletsCount,
-      'Date_Déchargement': null,
-      'temp_Déchargement': null,
-      'Jours_d\'Attente': 0,
+      Record_No: trailerPlate,
+      Day: deriveDayFromDate(arrivalDateAsDate),
+      Planned_Date: arrivalDateAsDate,
+      Arrival_Date: arrivalDateAsDate,
+      Arrival_Time: arrivalTime,
+      Plate_No: trailerPlate,
+      Vehicle_Type: transportType,
+      Supplier: supplier,
+      Origin: origin,
+      N_Pallets: palletsCount,
+      Unloaded_Date: null,
+      Unloaded_Time: null,
+      Waiting_Days: 0,
       Created_By_Email: req.user?.email || '',
       Created_By_Id: String(req.user?._id || ''),
     })
@@ -589,13 +611,13 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
       reception: {
         id: String(created._id),
         createdAt: created.createdAt,
-        supplier: created.Fournisseur,
-        origin: created.Origine,
-        vehicleType: created['Type_Véhicule'],
-        pallets: created.Nb_Palettes,
-        recordNo: created.Total_N,
-        arrivalDate: formatDateValue(created['Date_Arrivée']),
-        arrivalTime: created['Heure_Arrivée'],
+        supplier: created.Supplier,
+        origin: created.Origin,
+        vehicleType: created.Vehicle_Type,
+        pallets: created.N_Pallets,
+        recordNo: created.Record_No,
+        arrivalDate: formatDateValue(created.Arrival_Date),
+        arrivalTime: created.Arrival_Time,
       },
     })
   } catch (error) {
@@ -617,21 +639,20 @@ router.get('/alerts/receptions', protect, requireDashboardAccess, async (req, re
       .sort({ createdAt: -1, _id: -1 })
       .limit(limit)
       .select(
-        "_id createdAt Fournisseur Origine Type_Véhicule Nb_Palettes Total_N Plaque_Immatriculation Date_Arrivée Heure_Arrivée",
+        '_id createdAt Supplier Origin Vehicle_Type N_Pallets Record_No Plate_No Arrival_Date Arrival_Time',
       )
       .lean()
 
     const alerts = rows.map((row) => ({
       id: String(row._id),
       createdAt: row.createdAt,
-      supplier: String(row.Fournisseur || '').trim(),
-      origin: normalizeOrigin(row.Origine) || String(row.Origine || '').trim(),
-      vehicleType:
-        normalizeTransportType(row['Type_Véhicule']) || String(row['Type_Véhicule'] || '').trim(),
-      pallets: Number(row.Nb_Palettes) || 0,
-      recordNo: String(row.Total_N || row.Plaque_Immatriculation || '').trim(),
-      arrivalDate: formatDateValue(row['Date_Arrivée']),
-      arrivalTime: String(row['Heure_Arrivée'] || '').trim(),
+      supplier: String(row.Supplier || '').trim(),
+      origin: normalizeOrigin(row.Origin) || String(row.Origin || '').trim(),
+      vehicleType: normalizeTransportType(row.Vehicle_Type) || String(row.Vehicle_Type || '').trim(),
+      pallets: Number(row.N_Pallets) || 0,
+      recordNo: String(row.Record_No || row.Plate_No || '').trim(),
+      arrivalDate: formatDateValue(row.Arrival_Date),
+      arrivalTime: String(row.Arrival_Time || '').trim(),
     }))
 
     return res.status(200).json(alerts)
@@ -1148,7 +1169,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
         {
           $project: {
             _id: 0,
-            recordNo: { $ifNull: ['$Total_N', '$Plaque_Immatriculation'] },
+            recordNo: { $ifNull: ['$Record_No', { $ifNull: ['$Total_N', { $ifNull: ['$Plate_No', '$Plaque_Immatriculation'] }] }] },
             supplier: '$supplierNormalized',
             arrivalDate: {
               $dateToString: {
@@ -1162,7 +1183,7 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
             origin: '$originNormalized',
             waitingDays: '$waitingDaysNumeric',
             status: {
-              $cond: [{ $ifNull: ['$Date_Déchargement', false] }, 'Unloaded', 'In Progress'],
+              $cond: [{ $ifNull: ['$Unloaded_Date', { $ifNull: ['$Date_Déchargement', false] }] }, 'Unloaded', 'In Progress'],
             },
           },
         },
@@ -1215,5 +1236,69 @@ router.get('/supplier', protect, requireDashboardAccess, async (req, res) => {
   }
 })
 
+
+router.get('/analytics/import-costs', protect, requireDashboardAccess, async (req, res) => {
+  try {
+    const limitRaw = Number(req.query.limit)
+    const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.floor(limitRaw), 1), 2000) : 500
+
+    const resultsPath = resolveProjectArtifactPath('ml_model_results.json')
+
+    if (!fs.existsSync(resultsPath)) {
+      return res.status(404).json({
+        message: "Resultats ML introuvables. Lancez d'abord le script ml_etl_yazaki.py.",
+      })
+    }
+
+    const summary = JSON.parse(fs.readFileSync(resultsPath, 'utf-8'))
+    const predictionsPath = summary?.predictions_file
+      ? path.resolve(summary.predictions_file)
+      : resolveProjectArtifactPath('ml_predictions_montant_euro.xlsx')
+
+    let predictions = []
+    if (fs.existsSync(predictionsPath)) {
+      const workbook = XLSX.readFile(predictionsPath, { cellDates: true })
+      const sheetName = workbook.SheetNames[0]
+      if (sheetName) {
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+          defval: null,
+          raw: true,
+        })
+
+        predictions = rows
+          .map((row) => ({
+            transporteur: String(row.TRANSPORTEUR || '').trim() || 'UNKNOWN',
+            fournisseur: String(row.FOURNISSEUR || '').trim() || 'UNKNOWN',
+            typeTransport: String(row.TYPE_TRANSPORT || '').trim() || 'UNKNOWN',
+            designation: String(row.DESIGNATION || '').trim() || 'UNKNOWN',
+            nbrColis: Number(row.NBR_COLIS) || 0,
+            receptionMonth: Number(row.RECEPTION_MONTH) || null,
+            receptionWeek: Number(row.RECEPTION_WEEK) || null,
+            receptionWeekday: Number(row.RECEPTION_WEEKDAY) || null,
+            importDelayDays: Number.isFinite(Number(row.IMPORT_DELAY_DAYS)) ? Number(row.IMPORT_DELAY_DAYS) : null,
+            montantReelEuro: Number(row.MONTANT_EN_EURO) || 0,
+            montantPreditEuro: Number(row.PREDICTED_MONTANT_EN_EURO) || 0,
+            erreurAbsolue: Number(row.ABS_ERROR) || 0,
+            erreurPct: Number(row.ERROR_PCT) || 0,
+          }))
+          .sort((a, b) => b.erreurAbsolue - a.erreurAbsolue)
+          .slice(0, limit)
+      }
+    }
+
+    return res.status(200).json({
+      summary,
+      predictions,
+      files: {
+        resultsPath,
+        predictionsPath,
+      },
+    })
+  } catch (error) {
+    console.error('Dashboard analytics import costs error:', error)
+    return res.status(500).json({ message: 'Erreur serveur.' })
+  }
+})
 export default router
+
 

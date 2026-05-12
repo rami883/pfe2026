@@ -1,7 +1,13 @@
 frontend/node_modules/
 frontend/dist/
 frontend/.env
+frontend/*.log
+frontend/*.err.log
 backend/node_modules/
 backend/.env
 backend/.env.local
 backend/*.log
+.edge-debug/
+__pycache__/
+*.pyc
+~$*.xlsx

@@ -1,6 +1,8 @@
 import {
   CheckCircle2,
   ClipboardList,
+  Clock3,
+  Trash2,
   Mail,
   ShieldCheck,
   UserRound,
@@ -10,6 +12,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   approvePendingUserRequest,
+  deleteUserRequest,
+  getUsersRequest,
   getPendingUsersRequest,
   rejectPendingUserRequest,
 } from '../api/authApi'
@@ -18,24 +22,44 @@ import { getRoleLabel } from '../config/roles'
 
 function AdminApprovalsPage() {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, user: currentUser } = useAuth()
   const [pendingUsers, setPendingUsers] = useState([])
+  const [users, setUsers] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [busyActionByUserId, setBusyActionByUserId] = useState({})
+  const currentUserId = String(currentUser?._id || currentUser?.id || '')
+
+  function formatDate(value) {
+    if (!value) {
+      return '-'
+    }
+
+    const parsed = new Date(value)
+    if (Number.isNaN(parsed.getTime())) {
+      return '-'
+    }
+
+    return parsed.toLocaleString()
+  }
 
   useEffect(() => {
     let isMounted = true
 
-    async function loadPendingUsers() {
+    async function loadAdminData() {
       setIsLoading(true)
       setErrorMessage('')
 
       try {
-        const response = await getPendingUsersRequest()
+        const [pendingResponse, usersResponse] = await Promise.all([
+          getPendingUsersRequest(),
+          getUsersRequest(),
+        ])
+
         if (isMounted) {
-          setPendingUsers(response.users)
+          setPendingUsers(pendingResponse.users)
+          setUsers(usersResponse.users)
         }
       } catch (error) {
         if (isMounted) {
@@ -51,7 +75,7 @@ function AdminApprovalsPage() {
       }
     }
 
-    loadPendingUsers()
+    loadAdminData()
 
     return () => {
       isMounted = false
@@ -84,9 +108,58 @@ function AdminApprovalsPage() {
       }
 
       setPendingUsers((current) => current.filter((user) => user._id !== userId))
+      setUsers((current) =>
+        current.map((item) =>
+          item._id === userId
+            ? {
+                ...item,
+                isApproved: action === 'approve',
+                isRejected: action !== 'approve',
+              }
+            : item,
+        ),
+      )
     } catch (error) {
       setErrorMessage(
         error.message || "L'operation a echoue. Veuillez reessayer.",
+      )
+    } finally {
+      setBusyActionByUserId((current) => ({
+        ...current,
+        [userId]: false,
+      }))
+    }
+  }
+
+  async function handleDeleteUser(userItem) {
+    const userId = String(userItem?._id || '')
+    const username = userItem?.username || 'cet utilisateur'
+
+    if (!userId) {
+      return
+    }
+
+    const shouldDelete = window.confirm(
+      `Supprimer ${username} ? Cette action est definitive.`,
+    )
+
+    if (!shouldDelete) {
+      return
+    }
+
+    setBusyActionByUserId((current) => ({
+      ...current,
+      [userId]: true,
+    }))
+    setErrorMessage('')
+
+    try {
+      await deleteUserRequest(userId)
+      setUsers((current) => current.filter((item) => item._id !== userId))
+      setPendingUsers((current) => current.filter((item) => item._id !== userId))
+    } catch (error) {
+      setErrorMessage(
+        error.message || "La suppression a echoue. Veuillez reessayer.",
       )
     } finally {
       setBusyActionByUserId((current) => ({
@@ -112,7 +185,10 @@ function AdminApprovalsPage() {
 
       <section className="portal-card approval-card">
         <div className="approval-header">
-          <strong>{pendingUsers.length} demande(s) en attente</strong>
+          <strong>
+            {pendingUsers.length} demande(s) en attente | {users.length}{' '}
+            utilisateur(s)
+          </strong>
           <button
             type="button"
             className="ghost-button"
@@ -189,6 +265,86 @@ function AdminApprovalsPage() {
             })}
           </div>
         ) : null}
+
+        <section className="admin-users-section">
+          <div className="admin-users-section__header">
+            <h2>Liste complete des utilisateurs</h2>
+            <span>{users.length} compte(s)</span>
+          </div>
+
+          {!isLoading && users.length === 0 ? (
+            <p className="field-hint">Aucun utilisateur disponible.</p>
+          ) : null}
+
+          {!isLoading && users.length > 0 ? (
+            <div className="admin-users-table-wrap">
+              <table className="admin-users-table">
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Statut</th>
+                    <th>Cree le</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((userItem) => {
+                    const userId = String(userItem._id || '')
+                    const isBusy = Boolean(busyActionByUserId[userId])
+                    const isSelf = userId === currentUserId
+                    const statusLabel = userItem.isRejected
+                      ? 'Rejete'
+                      : userItem.isApproved
+                        ? 'Approuve'
+                        : 'En attente'
+                    const statusClassName = userItem.isRejected
+                      ? 'admin-status-pill admin-status-pill--rejected'
+                      : userItem.isApproved
+                        ? 'admin-status-pill admin-status-pill--approved'
+                        : 'admin-status-pill admin-status-pill--pending'
+
+                    return (
+                      <tr key={userId}>
+                        <td>{userItem.username || '-'}</td>
+                        <td>{userItem.email || '-'}</td>
+                        <td>{getRoleLabel(userItem.role)}</td>
+                        <td>
+                          <span className={statusClassName}>{statusLabel}</span>
+                        </td>
+                        <td>
+                          <span className="admin-users-date">
+                            <Clock3 size={13} aria-hidden="true" />
+                            {formatDate(userItem.createdAt)}
+                          </span>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="ghost-button admin-users-delete-btn"
+                            disabled={isBusy || isSelf}
+                            onClick={() => handleDeleteUser(userItem)}
+                            title={
+                              isSelf
+                                ? 'Vous ne pouvez pas supprimer votre compte connecte.'
+                                : 'Supprimer cet utilisateur'
+                            }
+                          >
+                            <span className="button-content">
+                              <Trash2 size={15} aria-hidden="true" />
+                              {isBusy ? 'Suppression...' : 'Supprimer'}
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </section>
       </section>
     </main>
   )

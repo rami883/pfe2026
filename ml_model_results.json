@@ -1,0 +1,30 @@
+{
+  "generated_at_utc": "2026-05-11T16:41:52.915760+00:00",
+  "best_model": "Random Forest Regressor",
+  "rows_used_for_training": 725,
+  "metrics": [
+    {
+      "MODEL": "Random Forest Regressor",
+      "MAE": 507.4853,
+      "RMSE": 832.7864,
+      "R2": 0.7479
+    },
+    {
+      "MODEL": "Gradient Boosting Regressor",
+      "MAE": 581.9485,
+      "RMSE": 835.9487,
+      "R2": 0.746
+    },
+    {
+      "MODEL": "Linear Regression",
+      "MAE": 769.7442,
+      "RMSE": 1146.2815,
+      "R2": 0.5224
+    }
+  ],
+  "best_model_metrics": {
+    "MAE": 507.4853,
+    "RMSE": 832.7864,
+    "R2": 0.7479
+  }
+}

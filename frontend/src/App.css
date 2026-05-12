@@ -310,7 +310,7 @@
 }
 
 .approval-card {
-  width: min(100%, 820px);
+  width: min(100%, 1180px);
 }
 
 .arrival-card {
@@ -405,6 +405,105 @@
   gap: 10px;
 }
 
+.admin-users-section {
+  margin-top: 8px;
+  display: grid;
+  gap: 12px;
+}
+
+.admin-users-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-users-section__header h2 {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.admin-users-section__header span {
+  color: var(--text-soft);
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.admin-users-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.admin-users-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  color: var(--text);
+  font-size: 0.91rem;
+}
+
+.admin-users-table th {
+  background: rgba(15, 23, 42, 0.03);
+  font-weight: 800;
+}
+
+.admin-users-table tbody tr:hover {
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.admin-users-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.admin-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  border-radius: 999px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-status-pill--approved {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+}
+
+.admin-status-pill--pending {
+  background: rgba(245, 158, 11, 0.15);
+  color: #92400e;
+}
+
+.admin-status-pill--rejected {
+  background: rgba(185, 28, 28, 0.12);
+  color: #991b1b;
+}
+
+.admin-users-delete-btn {
+  min-height: 38px;
+  padding: 0 14px;
+  border-color: rgba(185, 28, 28, 0.2);
+  color: #991b1b;
+}
+
+.admin-users-delete-btn:hover {
+  background: rgba(185, 28, 28, 0.08);
+}
+
 .portal-card__row {
   display: flex;
   align-items: center;
@@ -489,7 +588,16 @@
     align-items: flex-start;
   }
 
+  .approval-card {
+    width: 100%;
+  }
+
   .arrival-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-users-section__header {
     flex-direction: column;
     align-items: flex-start;
   }

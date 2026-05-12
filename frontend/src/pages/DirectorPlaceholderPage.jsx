@@ -23,6 +23,7 @@ import ExecutiveOverviewPage from '../dashboard/pages/ExecutiveOverviewPage'
 import OperationsMonitoringPage from '../dashboard/pages/OperationsMonitoringPage'
 import ReportsPage from '../dashboard/pages/ReportsPage'
 import SupplierPerformancePage from '../dashboard/pages/SupplierPerformancePage'
+import MLDashboard from './MLDashboard'
 import '../dashboard/dashboard.css'
 
 const BASE_NAV_ITEMS = [
@@ -45,7 +46,7 @@ const PERIOD_OPTIONS = [
 
 function createDefaultFilters() {
   return {
-    days: 7,
+    days: 365,
     fromDate: '',
     toDate: '',
     suppliers: [],
@@ -70,7 +71,7 @@ const PAGE_CONTENT = {
   },
   analytics: {
     title: 'Analytique',
-    subtitle: "Module d'analyse avancee en cours de configuration.",
+    subtitle: "Predictions de cout d'importation et performance des modeles ML.",
   },
   reports: {
     title: 'Rapports',
@@ -380,6 +381,10 @@ function DirectorPlaceholderPage() {
       return <OperationsMonitoringPage filters={filters} refreshTick={refreshTick} />
     }
 
+    if (activeView === 'analytics') {
+      return <MLDashboard />
+    }
+
     if (activeView === 'alerts') {
       return (
         <SectionCard title="Alertes receptions en temps reel">
@@ -449,7 +454,7 @@ function DirectorPlaceholderPage() {
       notificationCount={unreadAlerts}
       onOpenAlerts={handleOpenAlerts}
       showHeader={!['reports', 'alerts'].includes(activeView)}
-      showFilters={!['reports', 'alerts'].includes(activeView)}
+      showFilters={!['reports', 'alerts', 'analytics'].includes(activeView)}
     >
       {filtersError ? <p className="dashboard-error">{filtersError}</p> : null}
       {renderedPage}

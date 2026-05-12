@@ -196,3 +196,15 @@ export function rejectPendingUserRequest(userId) {
     method: 'PATCH',
   })
 }
+
+export function getUsersRequest() {
+  return apiRequest('/api/users').then((data) => ({
+    users: Array.isArray(data?.users) ? data.users : [],
+  }))
+}
+
+export function deleteUserRequest(userId) {
+  return apiRequest(`/api/users/${userId}`, {
+    method: 'DELETE',
+  })
+}
