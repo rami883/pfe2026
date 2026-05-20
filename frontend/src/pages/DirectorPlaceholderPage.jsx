@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
   BellRing,
   FileText,
   LayoutDashboard,
   LineChart,
-  Settings,
   Trash2,
   Truck,
+  X,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/useAuth'
@@ -27,13 +27,12 @@ import MLDashboard from './MLDashboard'
 import '../dashboard/dashboard.css'
 
 const BASE_NAV_ITEMS = [
-  { id: 'executive', label: 'Vue executive', icon: LayoutDashboard },
-  { id: 'suppliers', label: 'Fournisseurs', icon: Truck },
-  { id: 'operations', label: 'Operations', icon: Activity },
-  { id: 'analytics', label: 'Analytique', icon: LineChart },
+  { id: 'executive', label: 'Tableau de bord', icon: LayoutDashboard },
+  { id: 'suppliers', label: 'Performance des fournisseurs', icon: Truck },
+  { id: 'operations', label: 'Suivi des rÃ©ceptions', icon: Activity },
+  { id: 'analytics', label: 'Analyse PrÃ©dictive', icon: LineChart },
   { id: 'reports', label: 'Rapports', icon: FileText },
   { id: 'alerts', label: 'Alertes', icon: BellRing },
-  { id: 'settings', label: 'Parametres', icon: Settings },
 ]
 
 const PERIOD_OPTIONS = [
@@ -46,7 +45,7 @@ const PERIOD_OPTIONS = [
 
 function createDefaultFilters() {
   return {
-    days: 365,
+    days: 7,
     fromDate: '',
     toDate: '',
     suppliers: [],
@@ -57,37 +56,33 @@ function createDefaultFilters() {
 
 const PAGE_CONTENT = {
   executive: {
-    title: 'Vue executive',
-    subtitle:
-      'Vue globale des performances logistiques et de la productivite hebdomadaire.',
+    title: 'Tableau de bord',
+    subtitle: '',
   },
   suppliers: {
-    title: 'Performance fournisseurs',
-    subtitle: 'Analyse comparative des fournisseurs par volume, remorques et efficacite.',
+    title: 'Performance des fournisseurs',
+    subtitle: '',
   },
   operations: {
-    title: 'Suivi des operations',
-    subtitle: 'Pilotage quotidien des receptions, flux horaires et dernieres operations.',
+    title: 'Suivi des rÃ©ceptions',
+    subtitle: '',
   },
   analytics: {
-    title: 'Analytique',
-    subtitle: "Predictions de cout d'importation et performance des modeles ML.",
+    title: 'Analyse PrÃ©dictive',
+    subtitle: '',
   },
   reports: {
     title: 'Rapports',
-    subtitle: 'Centre de reporting corporate en preparation.',
+    subtitle: '',
   },
   alerts: {
     title: 'Alertes',
-    subtitle: 'Nouvelles receptions envoyees par les gestionnaires.',
-  },
-  settings: {
-    title: 'Parametres',
-    subtitle: 'Parametres de la plateforme dashboard.',
+    subtitle: '',
   },
 }
 
 const DISMISSED_ALERTS_STORAGE_KEY = 'pfe_director_dismissed_alert_ids'
+const DASHBOARD_THEME_STORAGE_KEY = 'pfe_dashboard_theme'
 
 function getDismissedAlertIds() {
   if (typeof window === 'undefined') {
@@ -120,6 +115,14 @@ function saveDismissedAlertIds(ids = []) {
   )
 }
 
+function getSavedDarkModePreference() {
+  if (typeof window === 'undefined') {
+    return false
+  }
+
+  return window.localStorage.getItem(DASHBOARD_THEME_STORAGE_KEY) === 'dark'
+}
+
 function DirectorPlaceholderPage() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
@@ -133,11 +136,24 @@ function DirectorPlaceholderPage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [alerts, setAlerts] = useState([])
   const [unreadAlerts, setUnreadAlerts] = useState(0)
+  const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(getSavedDarkModePreference)
   const [refreshTick, setRefreshTick] = useState(0)
   const knownAlertIdsRef = useRef(new Set())
   const dismissedAlertIdsRef = useRef(new Set(getDismissedAlertIds()))
 
   const pageMeta = PAGE_CONTENT[activeView] || PAGE_CONTENT.executive
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(
+      DASHBOARD_THEME_STORAGE_KEY,
+      isDarkMode ? 'dark' : 'light',
+    )
+  }, [isDarkMode])
 
   useEffect(() => {
     let mounted = true
@@ -327,9 +343,32 @@ function DirectorPlaceholderPage() {
   }
 
   function handleOpenAlerts() {
-    setActiveView('alerts')
+    setIsAlertsModalOpen(true)
     setUnreadAlerts(0)
   }
+
+  function handleCloseAlertsModal() {
+    setIsAlertsModalOpen(false)
+  }
+
+  function handleToggleDarkMode() {
+    setIsDarkMode((current) => !current)
+  }
+
+  useEffect(() => {
+    if (!isAlertsModalOpen) {
+      return undefined
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        handleCloseAlertsModal()
+      }
+    }
+
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isAlertsModalOpen])
 
   function handleDismissAlert(alertId) {
     const normalizedId = String(alertId || '').trim()
@@ -453,14 +492,83 @@ function DirectorPlaceholderPage() {
       vehicleTypeOptions={vehicleTypeOptions}
       notificationCount={unreadAlerts}
       onOpenAlerts={handleOpenAlerts}
+      isDarkMode={isDarkMode}
+      onToggleDarkMode={handleToggleDarkMode}
       showHeader={!['reports', 'alerts'].includes(activeView)}
       showFilters={!['reports', 'alerts', 'analytics'].includes(activeView)}
     >
       {filtersError ? <p className="dashboard-error">{filtersError}</p> : null}
       {renderedPage}
+
+      {isAlertsModalOpen ? (
+        <div
+          className="dashboard-alert-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              handleCloseAlertsModal()
+            }
+          }}
+        >
+          <section
+            className="dashboard-alert-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dashboard-alert-modal-title"
+          >
+            <header className="dashboard-alert-modal__header">
+              <div>
+                <p className="dashboard-alert-modal__eyebrow">Notifications</p>
+                <h2 id="dashboard-alert-modal-title">Alertes rÃ©ceptions</h2>
+              </div>
+              <button
+                type="button"
+                className="dashboard-alert-modal__close"
+                onClick={handleCloseAlertsModal}
+                aria-label="Fermer les alertes"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
+
+            {!alerts.length ? (
+              <div className="dashboard-alert-modal__empty">
+                Aucune nouvelle rÃ©ception dÃ©tectÃ©e.
+              </div>
+            ) : (
+              <div className="dashboard-alert-modal__list">
+                {alerts.map((alert) => (
+                  <article key={alert.id} className="dashboard-alert-item">
+                    <strong>{alert.supplier || 'Fournisseur inconnu'}</strong>
+                    <p>
+                      Remorque: {alert.recordNo || '-'} | Origine: {alert.origin || '-'} |
+                      Type: {alert.vehicleType || '-'} | Palettes: {alert.pallets || 0}
+                    </p>
+                    <small>
+                      Arrivee: {alert.arrivalDate || '-'} {alert.arrivalTime || '-'} | Ajoutee
+                      le: {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : '-'}
+                    </small>
+                    <button
+                      type="button"
+                      className="ghost-button dashboard-alert-dismiss-btn"
+                      onClick={() => handleDismissAlert(alert.id)}
+                      aria-label="Supprimer cette alerte"
+                    >
+                      <span className="button-content">
+                        <Trash2 size={14} aria-hidden="true" />
+                      </span>
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      ) : null}
     </DashboardLayout>
   )
 }
 
 export default DirectorPlaceholderPage
+
 

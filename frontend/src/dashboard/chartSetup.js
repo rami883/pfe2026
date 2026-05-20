@@ -8,6 +8,7 @@ import {
   LineElement,
   LinearScale,
   PointElement,
+  RadialLinearScale,
   ScatterController,
   Title,
   Tooltip,
@@ -16,6 +17,7 @@ import {
 ChartJS.register(
   CategoryScale,
   LinearScale,
+  RadialLinearScale,
   PointElement,
   LineElement,
   BarElement,
@@ -26,4 +28,3 @@ ChartJS.register(
   Legend,
   Filler,
 )
-

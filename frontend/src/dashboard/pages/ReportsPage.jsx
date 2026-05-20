@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Download } from 'lucide-react'
+import { utils, writeFile } from 'xlsx'
 import { getOperationsMonitoring } from '../../api/dashboardApi'
 import DataTable from '../components/DataTable'
 import SectionCard from '../components/SectionCard'
@@ -74,6 +76,46 @@ function ReportsPage({ filters, refreshTick = 0 }) {
     [],
   )
 
+  const handleExportToExcel = () => {
+    if (!rows.length) {
+      alert('Aucune donnée à exporter.')
+      return
+    }
+
+    // Préparer les données pour l'export
+    const exportData = rows.map((row) => ({
+      "Date d'arrivee": row.arrivalDate || '-',
+      'Fournisseur': row.supplier || '-',
+      "Heure d'arrivee": row.arrivalTime || '-',
+      'Palettes': row.pallets || '-',
+      'Type de vehicule': row.vehicleType || '-',
+      'Origine': row.origin || '-',
+      "Jours d'attente": row.waitingDays || '-',
+      'Statut': row.status || '-',
+    }))
+
+    // Créer un workbook et ajouter les données
+    const worksheet = utils.json_to_sheet(exportData)
+    const workbook = utils.book_new()
+    utils.book_append_sheet(workbook, worksheet, 'Receptions')
+
+    // Ajuster la largeur des colonnes
+    worksheet['!cols'] = [
+      { wch: 15 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+    ]
+
+    // Télécharger le fichier
+    const timestamp = new Date().toISOString().slice(0, 10)
+    writeFile(workbook, `receptions_${timestamp}.xlsx`)
+  }
+
   return (
     <>
       <SectionCard title="Rapports">
@@ -82,6 +124,16 @@ function ReportsPage({ filters, refreshTick = 0 }) {
       </SectionCard>
 
       <SectionCard title="Table des receptions recentes">
+        <div className="reports-actions">
+          <button
+            className="btn-export"
+            onClick={handleExportToExcel}
+            disabled={isLoading}
+          >
+            <Download size={18} />
+            Télécharger XLS
+          </button>
+        </div>
         <DataTable
           columns={tableColumns}
           rows={rows}

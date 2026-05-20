@@ -84,6 +84,20 @@ function LoginPage() {
 
   return (
     <main className="login-shell">
+      <div className="login-shell__bg" aria-hidden="true">
+        <video
+          className="login-shell__video"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+        >
+          <source src="/media/meet-yazaki.mp4" type="video/mp4" />
+        </video>
+        <div className="login-shell__overlay" />
+      </div>
+
       <section className="login-panel">
         <div className="login-card">
           <div className="login-card__header">

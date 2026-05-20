@@ -113,7 +113,16 @@ function RegisterForm() {
   }
 
   return (
-    <main className="login-shell">
+    <main className="login-shell register-shell">
+      <div className="register-shell__bg" aria-hidden="true">
+        <img
+          className="register-shell__image"
+          src="/media/yazaki-register-bg.jpg"
+          alt=""
+        />
+        <div className="register-shell__overlay" />
+      </div>
+
       <section className="login-panel">
         <div className="login-card register-card">
           <div className="login-card__header">

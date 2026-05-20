@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const AUTH_TOKEN_STORAGE_KEY = 'pfe_auth_token'
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -40,6 +40,7 @@ function normalizeFilters(filters = {}) {
     statut: String(filters.statut || '').trim(),
     type_transport: String(filters.typeTransport || filters.type_transport || '').trim(),
     q: String(filters.search || '').trim(),
+    all: String(filters.all || '').trim(),
     page: Number(filters.page || 1),
     pageSize: Number(filters.pageSize || 100),
   }
@@ -50,6 +51,11 @@ function normalizeFilters(filters = {}) {
 /** KPIs du modèle (MAE, RMSE, R², bestModel, trainedAt, ...) */
 export async function getMLMetrics() {
   return mlGet('/api/ml/metrics')
+}
+
+/** Comparaison detaillee des modeles testes (MAE/RMSE/R2/CV) */
+export async function getMLModelComparison() {
+  return mlGet('/api/ml/model-comparison')
 }
 
 /** Valeurs distinctes pour tous les dropdowns de filtres */

@@ -8,6 +8,19 @@ function statusClassName(statut) {
   return 'ml-status-pill ml-status-pill--review'
 }
 
+function normalizeText(value) {
+  if (value === null || value === undefined) return '-'
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) return value.map((item) => normalizeText(item)).join(', ')
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
+
 /**
  * Exporte les lignes actuelles en fichier CSV (séparateur ;, encodage UTF-8 BOM).
  * Le BOM assure que Excel ouvre correctement les caractères accentués.
@@ -44,6 +57,7 @@ function exportToCSV(rows) {
 
 // ─── Composant ────────────────────────────────────────────────────────────────
 function PredictionsTable({ rows = [], page = 1, totalPages = 1, total = 0, onPageChange }) {
+  const safeRows = Array.isArray(rows) ? rows.filter((row) => row && typeof row === 'object') : []
   return (
     <section className="ml-table-card">
       <div className="ml-table-header">
@@ -53,11 +67,11 @@ function PredictionsTable({ rows = [], page = 1, totalPages = 1, total = 0, onPa
             {total > 0 ? `${total.toLocaleString('fr-FR')} prédictions au total` : 'Aucune prédiction'}
           </p>
         </div>
-        {rows.length > 0 && (
+        {safeRows.length > 0 && (
           <button
             type="button"
             className="ml-export-btn"
-            onClick={() => exportToCSV(rows)}
+            onClick={() => exportToCSV(safeRows)}
             title="Télécharger les prédictions filtrées en CSV"
           >
             <Download size={14} aria-hidden="true" />
@@ -84,7 +98,7 @@ function PredictionsTable({ rows = [], page = 1, totalPages = 1, total = 0, onPa
             </tr>
           </thead>
           <tbody>
-            {!rows.length ? (
+            {!safeRows.length ? (
               <tr>
                 <td colSpan={11} className="ml-table__empty">
                   Aucune prédiction pour les filtres sélectionnés.
@@ -92,13 +106,21 @@ function PredictionsTable({ rows = [], page = 1, totalPages = 1, total = 0, onPa
               </tr>
             ) : null}
 
-            {rows.map((row) => (
-              <tr key={row.id} className="ml-table__row">
-                <td className="ml-table__carrier">{row.transporteur}</td>
-                <td>{row.fournisseur}</td>
-                <td>{row.type_transport}</td>
-                <td className="ml-table__designation" title={row.designation}>
-                  {row.designation}
+            {safeRows.map((row, index) => {
+              const transporteur = normalizeText(row.transporteur)
+              const fournisseur = normalizeText(row.fournisseur)
+              const typeTransport = normalizeText(row.type_transport)
+              const designation = normalizeText(row.designation)
+              const statut = normalizeText(row.statut)
+              const rowKey = String(row.id ?? row._id ?? `row-${index}`)
+
+              return (
+              <tr key={rowKey} className="ml-table__row">
+                <td className="ml-table__carrier">{transporteur}</td>
+                <td>{fournisseur}</td>
+                <td>{typeTransport}</td>
+                <td className="ml-table__designation" title={designation}>
+                  {designation}
                 </td>
                 <td className="ml-table__num">{formatInteger(row.nbr_colis)}</td>
                 <td className="ml-table__num">{formatInteger(row.delai_jours)}</td>
@@ -117,10 +139,11 @@ function PredictionsTable({ rows = [], page = 1, totalPages = 1, total = 0, onPa
                   </span>
                 </td>
                 <td>
-                  <span className={statusClassName(row.statut)}>{row.statut}</span>
+                  <span className={statusClassName(statut)}>{statut}</span>
                 </td>
               </tr>
-            ))}
+              )
+            })}
           </tbody>
         </table>
       </div>

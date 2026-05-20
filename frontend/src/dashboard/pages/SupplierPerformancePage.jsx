@@ -115,7 +115,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
       } catch (requestError) {
         if (mounted) {
           setError(
-            requestError?.message || 'Impossible de charger la performance fournisseurs.',
+            requestError?.message || 'Impossible de charger la performance des fournisseurs.',
           )
         }
       } finally {
@@ -182,7 +182,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
   )
   if (isLoading) {
     return (
-      <SectionCard title="Performance fournisseurs">
+      <SectionCard title="Performance des fournisseurs">
         <p className="dashboard-muted">Chargement des donnees fournisseurs...</p>
       </SectionCard>
     )
@@ -190,7 +190,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Performance fournisseurs">
+      <SectionCard title="Performance des fournisseurs">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )
@@ -201,7 +201,7 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
     !topSuppliersByTrailers.length
   ) {
     return (
-      <SectionCard title="Performance fournisseurs">
+      <SectionCard title="Performance des fournisseurs">
         <p className="dashboard-muted">Aucune donnee fournisseur disponible.</p>
       </SectionCard>
     )

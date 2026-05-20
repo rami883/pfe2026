@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Clock3,
   Container,
-  ListChecks,
+  Gauge,
   Package,
-  Target,
-  TrendingDown,
   Trophy,
 } from 'lucide-react'
 import { Bar } from 'react-chartjs-2'
@@ -235,7 +232,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         }
       } catch (requestError) {
         if (mounted) {
-          setError(requestError?.message || 'Impossible de charger la vue executive.')
+          setError(requestError?.message || 'Impossible de charger le tableau de bord.')
         }
       } finally {
         if (mounted) {
@@ -260,6 +257,17 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
     topSupplier: '-',
     topSupplierPallets: 0,
   }
+
+  const palletsPerTrailer = useMemo(() => {
+    const totalPallets = Number(kpis.totalPallets) || 0
+    const totalTrailers = Number(kpis.totalTrailers) || 0
+
+    if (!totalTrailers) {
+      return 0
+    }
+
+    return totalPallets / totalTrailers
+  }, [kpis.totalPallets, kpis.totalTrailers])
 
   const trailersTableColumns = [
     { key: 'semaine', header: 'Semaine', render: formatWeekWithMonth },
@@ -309,6 +317,9 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         const ratio = count > 1 ? index / (count - 1) : 0
         return lerpColor('#f5c2c5', '#8b0000', ratio)
       })
+      const focusedColors = trailersByWeek.map((item, index) =>
+        selectedWeek && item.week === selectedWeek ? '#5f0508' : colors[index],
+      )
 
       return {
         labels: trailersByWeek.map((item) => item.week),
@@ -316,8 +327,14 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
           {
             label: 'Remorques',
             data: trailersByWeek.map((item) => item.trailers),
-            borderColor: '#8b0000',
-            backgroundColor: colors,
+            borderColor: trailersByWeek.map((item) =>
+              selectedWeek && item.week === selectedWeek ? '#111827' : '#8b0000',
+            ),
+            backgroundColor: focusedColors,
+            hoverBackgroundColor: trailersByWeek.map(() => '#7f0b10'),
+            borderWidth: trailersByWeek.map((item) =>
+              selectedWeek && item.week === selectedWeek ? 2 : 1,
+            ),
             borderRadius: 6,
             borderSkipped: false,
             barPercentage: 0.78,
@@ -326,7 +343,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
         ],
       }
     },
-    [trailersByWeek],
+    [selectedWeek, trailersByWeek],
   )
 
   const palletsLineData = useMemo(
@@ -509,6 +526,26 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
   const trailersChartOptions = useMemo(
     () => ({
       ...lineOptions,
+      animation: {
+        duration: 720,
+        easing: 'easeOutQuart',
+        delay(context) {
+          if (context.type !== 'data' || context.mode !== 'default') {
+            return 0
+          }
+
+          return context.dataIndex * 70
+        },
+      },
+      hover: {
+        mode: 'nearest',
+        intersect: true,
+      },
+      onHover(event, elements) {
+        if (event?.native?.target) {
+          event.native.target.style.cursor = elements?.length ? 'pointer' : 'default'
+        }
+      },
       scales: {
         ...lineOptions.scales,
         x: {
@@ -558,7 +595,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   if (isLoading) {
     return (
-      <SectionCard title="Vue executive">
+      <SectionCard title="Tableau de bord">
         <p className="dashboard-muted">Chargement des indicateurs...</p>
       </SectionCard>
     )
@@ -566,7 +603,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Vue executive">
+      <SectionCard title="Tableau de bord">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )
@@ -574,7 +611,7 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   if (!trailersByWeek.length && !palletsByWeek.length) {
     return (
-      <SectionCard title="Vue executive">
+      <SectionCard title="Tableau de bord">
         <p className="dashboard-muted">Aucune donnee disponible pour cette periode.</p>
       </SectionCard>
     )
@@ -582,18 +619,12 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
 
   return (
     <>
-      <section className="kpi-grid kpi-grid--six">
+      <section className="kpi-grid kpi-grid--executive">
         <KPIBox
           icon={Package}
           label="Total palettes"
           value={formatNumber(kpis.totalPallets)}
           helper="Pallets recues sur la periode"
-        />
-        <KPIBox
-          icon={ListChecks}
-          label="Total Receptions"
-          value={formatNumber(kpis.totalReceptions)}
-          helper="Enregistrements receptions"
         />
         <KPIBox
           icon={Container}
@@ -602,26 +633,11 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
           helper="Remorques enregistrees"
         />
         <KPIBox
-          icon={Clock3}
-          label="Moyenne jours attente"
-          value={kpis.averageWaitingDays}
-          helper="Delai moyen avant dechargement"
+          icon={Gauge}
+          label="Palettes par remorque"
+          value={formatNumber(palletsPerTrailer)}
+          helper="Efficacite moyenne de chargement"
         />
-        <KPIBox
-          icon={Target}
-          label="Taux de dechargement a temps"
-          value={`${kpis.onTimeUnloadingRate}%`}
-          helper="Attente <= 1 jour"
-        />
-        <KPIBox
-          icon={TrendingDown}
-          label="Taux de retard"
-          value={`${kpis.delayRate}%`}
-          helper="Attente > 2 jours"
-        />
-      </section>
-
-      <section className="kpi-grid kpi-grid--two">
         <KPIBox
           icon={Trophy}
           label="Top fournisseur"

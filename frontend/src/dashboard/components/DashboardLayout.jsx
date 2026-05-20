@@ -19,6 +19,8 @@ function DashboardLayout({
   vehicleTypeOptions,
   notificationCount,
   onOpenAlerts,
+  isDarkMode = false,
+  onToggleDarkMode,
   showHeader = true,
   showFilters = true,
   children,
@@ -26,7 +28,7 @@ function DashboardLayout({
   const shouldShowHeader = showHeader && activeNavItem !== 'reports'
 
   return (
-    <div className="dashboard-root">
+    <div className={`dashboard-root ${isDarkMode ? 'dashboard-root--dark' : ''}`}>
       <Sidebar
         items={navItems}
         activeItem={activeNavItem}
@@ -51,6 +53,8 @@ function DashboardLayout({
             vehicleTypeOptions={vehicleTypeOptions}
             notificationCount={notificationCount}
             onOpenAlerts={onOpenAlerts}
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={onToggleDarkMode}
           />
         ) : null}
 

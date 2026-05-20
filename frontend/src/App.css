@@ -13,6 +13,53 @@
   background:
     radial-gradient(circle at 12% 0%, rgba(185, 28, 28, 0.11), transparent 34%),
     linear-gradient(180deg, #f9fbfd 0%, #eef3f8 100%);
+  overflow: hidden;
+}
+
+.login-shell__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.login-shell__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.08) contrast(1.04);
+}
+
+.login-shell__overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 82% 0%, rgba(10, 16, 25, 0.35), transparent 28%),
+    linear-gradient(180deg, rgba(8, 12, 20, 0.58), rgba(8, 12, 20, 0.64));
+}
+
+.register-shell__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.register-shell__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 44%;
+  filter: saturate(1.02) contrast(1.08);
+}
+
+.register-shell__overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(7, 10, 18, 0.68), rgba(7, 10, 18, 0.36)),
+    linear-gradient(180deg, rgba(7, 10, 18, 0.14), rgba(7, 10, 18, 0.6));
 }
 
 .login-panel,
@@ -23,18 +70,26 @@
   justify-content: center;
 }
 
+.login-panel {
+  position: relative;
+  z-index: 1;
+}
+
 .login-card,
 .portal-card,
 .status-panel {
   border: 1px solid var(--border);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.76);
   box-shadow: 0 24px 48px rgba(15, 23, 42, 0.09);
 }
 
 .login-card {
   width: min(100%, 500px);
   padding: 34px 32px;
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 28px 58px rgba(8, 12, 20, 0.24);
+  backdrop-filter: blur(14px);
 }
 
 .register-card {
@@ -294,6 +349,115 @@
 .portal-shell {
   flex-direction: column;
   gap: 24px;
+}
+
+@keyframes stockManagerTitleReveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stockManagerTitleAccent {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.stock-manager-shell {
+  overflow: hidden;
+  background: #101827;
+}
+
+.stock-manager-shell__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(7, 10, 18, 0.72), rgba(7, 10, 18, 0.32) 52%, rgba(7, 10, 18, 0.58)),
+    linear-gradient(180deg, rgba(7, 10, 18, 0.22), rgba(7, 10, 18, 0.66)),
+    url('/media/gestionnaire-page.png') center / cover no-repeat;
+  filter: saturate(1.06) contrast(1.04);
+}
+
+.stock-manager-shell .portal-hero,
+.stock-manager-shell .portal-card {
+  position: relative;
+  z-index: 1;
+}
+
+.stock-manager-shell .portal-hero {
+  color: #fff;
+}
+
+.stock-manager-shell .portal-hero h1 {
+  position: relative;
+  width: fit-content;
+  margin: 0;
+  padding-bottom: 10px;
+  color: #ffffff;
+  text-shadow: 0 12px 28px rgba(7, 10, 18, 0.38);
+  animation: stockManagerTitleReveal 520ms ease both;
+}
+
+.stock-manager-shell .portal-hero h1::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 72px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d71920, rgba(215, 25, 32, 0));
+  transform-origin: left;
+  animation: stockManagerTitleAccent 640ms ease 180ms both;
+}
+
+.stock-manager-shell .portal-hero p {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.stock-manager-shell .arrival-card {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 28px 70px rgba(7, 10, 18, 0.32);
+}
+
+.admin-shell {
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.admin-shell__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, rgba(248, 250, 252, 0.94), rgba(248, 250, 252, 0.62) 52%, rgba(248, 250, 252, 0.28)),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.2), rgba(248, 250, 252, 0.76)),
+    url('/media/admin-page-bg.png') center / cover no-repeat;
+  filter: saturate(1.04) contrast(1.02);
+}
+
+.admin-shell .portal-hero,
+.admin-shell .portal-card {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-shell .approval-card {
+  border-color: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
 }
 
 .portal-hero,
@@ -622,5 +786,11 @@
     border-top-right-radius: 0;
     border-top-left-radius: 0;
     border-bottom-left-radius: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-shell__video {
+    display: none;
   }
 }

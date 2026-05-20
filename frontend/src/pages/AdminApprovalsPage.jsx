@@ -170,7 +170,8 @@ function AdminApprovalsPage() {
   }
 
   return (
-    <main className="portal-shell">
+    <main className="portal-shell admin-shell">
+      <div className="admin-shell__bg" aria-hidden="true" />
       <section className="portal-hero">
         <span className="portal-badge">
           <ClipboardList size={16} aria-hidden="true" />

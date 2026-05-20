@@ -1,30 +1,36 @@
 {
-  "generated_at_utc": "2026-05-11T16:41:52.915760+00:00",
+  "generated_at_utc": "2026-05-12T17:29:42.354336+00:00",
   "best_model": "Random Forest Regressor",
-  "rows_used_for_training": 725,
+  "rows_used_for_training": 713,
   "metrics": [
     {
       "MODEL": "Random Forest Regressor",
-      "MAE": 507.4853,
-      "RMSE": 832.7864,
-      "R2": 0.7479
+      "MAE": 466.7062,
+      "RMSE": 771.728,
+      "R2": 0.7265,
+      "CV_R2_MEAN": 0.7104,
+      "CV_R2_STD": 0.0635
     },
     {
       "MODEL": "Gradient Boosting Regressor",
-      "MAE": 581.9485,
-      "RMSE": 835.9487,
-      "R2": 0.746
+      "MAE": 490.4203,
+      "RMSE": 786.2349,
+      "R2": 0.7161,
+      "CV_R2_MEAN": 0.7253,
+      "CV_R2_STD": 0.0323
     },
     {
       "MODEL": "Linear Regression",
-      "MAE": 769.7442,
-      "RMSE": 1146.2815,
-      "R2": 0.5224
+      "MAE": 634.8609,
+      "RMSE": 942.5999,
+      "R2": 0.5919,
+      "CV_R2_MEAN": -0.1048,
+      "CV_R2_STD": 1.1379
     }
   ],
   "best_model_metrics": {
-    "MAE": 507.4853,
-    "RMSE": 832.7864,
-    "R2": 0.7479
+    "MAE": 466.7062,
+    "RMSE": 771.728,
+    "R2": 0.7265
   }
 }

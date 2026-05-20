@@ -98,7 +98,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
       } catch (requestError) {
         if (mounted) {
           setError(
-            requestError?.message || 'Impossible de charger le suivi des operations.',
+            requestError?.message || 'Impossible de charger le suivi des receptions.',
           )
         }
       } finally {
@@ -324,7 +324,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
 
   if (isLoading) {
     return (
-      <SectionCard title="Suivi des operations">
+      <SectionCard title="Suivi des réceptions">
         <p className="dashboard-muted">Chargement des donnees operations...</p>
       </SectionCard>
     )
@@ -332,7 +332,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Suivi des operations">
+      <SectionCard title="Suivi des réceptions">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )
@@ -345,7 +345,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
     !recentShipments.length
   ) {
     return (
-      <SectionCard title="Suivi des operations">
+      <SectionCard title="Suivi des réceptions">
         <p className="dashboard-muted">Aucune donnee operationnelle disponible.</p>
       </SectionCard>
     )

@@ -45,7 +45,7 @@ function AnalyticsPage({ refreshTick = 0 }) {
         if (mounted) {
           setError(
             requestError?.message ||
-              "Impossible de charger l'analytique de prediction.",
+              "Impossible de charger l'analyse predictive.",
           )
         }
       } finally {
@@ -124,7 +124,7 @@ function AnalyticsPage({ refreshTick = 0 }) {
 
   if (isLoading) {
     return (
-      <SectionCard title="Analytique ML">
+      <SectionCard title="Analyse Prédictive">
         <p className="dashboard-muted">Chargement des resultats de prediction...</p>
       </SectionCard>
     )
@@ -132,7 +132,7 @@ function AnalyticsPage({ refreshTick = 0 }) {
 
   if (error) {
     return (
-      <SectionCard title="Analytique ML">
+      <SectionCard title="Analyse Prédictive">
         <p className="dashboard-error">{error}</p>
       </SectionCard>
     )

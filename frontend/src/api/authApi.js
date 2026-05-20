@@ -3,8 +3,40 @@ import {
   normalizeYazakiIdentifierInput,
 } from '../utils/yazakiEmail'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const AUTH_TOKEN_STORAGE_KEY = 'pfe_auth_token'
+const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:5000'
+
+function ensureLeadingSlash(path) {
+  if (!path) {
+    return '/'
+  }
+
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+function buildRequestUrl(path, baseUrl = API_BASE_URL) {
+  const normalizedPath = ensureLeadingSlash(path)
+  const normalizedBaseUrl = String(baseUrl || '').trim()
+
+  if (!normalizedBaseUrl) {
+    return normalizedPath
+  }
+
+  return `${normalizedBaseUrl.replace(/\/+$/, '')}${normalizedPath}`
+}
+
+function isNetworkError(error) {
+  const message = String(error?.message || '').toLowerCase()
+
+  return (
+    error instanceof TypeError ||
+    message.includes('failed to fetch') ||
+    message.includes('networkerror') ||
+    message.includes('load failed') ||
+    message.includes('echec de la recuperation')
+  )
+}
 
 function getStoredToken() {
   if (typeof window === 'undefined') {
@@ -124,7 +156,32 @@ export async function apiRequest(path, options = {}) {
     ...options,
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, config)
+  const requestUrl = buildRequestUrl(path)
+  const shouldUseLocalDevFallback = import.meta.env.DEV && !API_BASE_URL
+
+  let response
+
+  try {
+    response = await fetch(requestUrl, config)
+  } catch (error) {
+    if (shouldUseLocalDevFallback && isNetworkError(error)) {
+      try {
+        response = await fetch(
+          buildRequestUrl(path, LOCAL_DEV_API_BASE_URL),
+          config,
+        )
+      } catch (_fallbackError) {
+        throw new Error(
+          'Serveur injoignable. Verifiez que le backend tourne sur le port 5000.',
+        )
+      }
+    } else {
+      throw new Error(
+        'Serveur injoignable. Verifiez que le backend tourne sur le port 5000.',
+      )
+    }
+  }
+
   const isJsonResponse =
     response.headers.get('content-type')?.includes('application/json') ?? false
   const data = isJsonResponse ? await response.json() : null
@@ -208,3 +265,4 @@ export function deleteUserRequest(userId) {
     method: 'DELETE',
   })
 }
+

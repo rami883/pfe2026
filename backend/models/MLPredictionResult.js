@@ -30,6 +30,14 @@ const mlPredictionResultSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    reception_year: {
+      type: Number,
+      default: null,
+    },
+    reception_month: {
+      type: Number,
+      default: null,
+    },
     montant_reel: {
       type: Number,
       required: true,
@@ -67,6 +75,7 @@ mlPredictionResultSchema.index({ fournisseur: 1 })
 mlPredictionResultSchema.index({ type_transport: 1 })
 mlPredictionResultSchema.index({ statut: 1 })
 mlPredictionResultSchema.index({ erreur_absolue: -1 })
+mlPredictionResultSchema.index({ reception_year: 1, reception_month: 1 })
 
 const MLPredictionResult = mongoose.model(
   'MLPredictionResult',
@@ -74,4 +83,3 @@ const MLPredictionResult = mongoose.model(
 )
 
 export default MLPredictionResult
-

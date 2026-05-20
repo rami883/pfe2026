@@ -6,6 +6,7 @@ Outputs:
 2) ml_dataset_montant_euro.xlsx
 3) best_import_cost_model.pkl
 4) suivi_import_yazaki_with_anomalies.xlsx
+5) suivi_import_yazaki_out_of_scope.xlsx
 """
 
 from __future__ import annotations
@@ -34,6 +35,8 @@ TARGET_COLUMN = "MONTANT_EN_EURO"
 DATE_COLUMNS = ["PICK_UP_DATE", "DATE_RECEPTION"]
 NUMERIC_COLUMNS = ["NBR_COLIS", TARGET_COLUMN]
 DEFAULT_INPUT_FILE = r"C:\Users\medra\Downloads\SUIVI IMPORT YAZAKI  2025+2026.xlsx"
+SCOPE_START_YEAR = 2025
+SCOPE_END_YEAR = 2026
 
 
 def extract_excel(file_path: str | Path) -> pd.DataFrame:
@@ -192,6 +195,34 @@ def create_ml_features(df: pd.DataFrame) -> pd.DataFrame:
     return featured
 
 
+def add_date_scope_flag(
+    df: pd.DataFrame,
+    start_year: int = SCOPE_START_YEAR,
+    end_year: int = SCOPE_END_YEAR,
+) -> pd.DataFrame:
+    """
+    Flag reception date scope for governance:
+    - IN_SCOPE: year between start_year and end_year (inclusive)
+    - OUT_OF_SCOPE: valid date but out of range
+    - UNKNOWN: missing/invalid date
+    """
+    scoped = df.copy()
+
+    if "DATE_RECEPTION" not in scoped.columns:
+        scoped["DATE_SCOPE"] = "UNKNOWN"
+        return scoped
+
+    years = pd.to_datetime(scoped["DATE_RECEPTION"], errors="coerce").dt.year
+    in_scope = years.between(start_year, end_year, inclusive="both")
+
+    scoped["DATE_SCOPE"] = np.where(
+        years.isna(),
+        "UNKNOWN",
+        np.where(in_scope, "IN_SCOPE", "OUT_OF_SCOPE"),
+    )
+    return scoped
+
+
 def prepare_ml_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """Build the ML dataset using available required features and target."""
     if TARGET_COLUMN not in df.columns:
@@ -214,7 +245,11 @@ def prepare_ml_dataset(df: pd.DataFrame) -> pd.DataFrame:
     if not available_features:
         raise ValueError("Aucune feature exploitable trouvee pour le ML.")
 
-    ml_df = df[available_features + [TARGET_COLUMN]].copy()
+    scoped_df = df.copy()
+    if "DATE_SCOPE" in scoped_df.columns:
+        scoped_df = scoped_df[scoped_df["DATE_SCOPE"] == "IN_SCOPE"].copy()
+
+    ml_df = scoped_df[available_features + [TARGET_COLUMN]].copy()
     ml_df[TARGET_COLUMN] = pd.to_numeric(ml_df[TARGET_COLUMN], errors="coerce")
     ml_df = ml_df.dropna(subset=[TARGET_COLUMN])
 
@@ -275,7 +310,7 @@ def train_regression_models(
     models = {
         "Linear Regression": LinearRegression(),
         "Random Forest Regressor": RandomForestRegressor(
-            n_estimators=300, random_state=42, n_jobs=-1  # parallelize on all CPU cores
+            n_estimators=300, random_state=42, n_jobs=1
         ),
         "Gradient Boosting Regressor": GradientBoostingRegressor(
             n_estimators=200, learning_rate=0.1, max_depth=5, random_state=42
@@ -297,7 +332,15 @@ def train_regression_models(
         r2 = r2_score(y_test, y_pred)
 
         # Cross-validation 5-fold for robust metrics (avoids single-split bias)
-        cv_r2_scores = cross_val_score(pipeline, X, y, cv=5, scoring="r2", n_jobs=-1)
+        try:
+            cv_r2_scores = cross_val_score(
+                pipeline, X, y, cv=5, scoring="r2", n_jobs=-1
+            )
+        except Exception:
+            # Fallback for environments where process-based parallel CV is blocked.
+            cv_r2_scores = cross_val_score(
+                pipeline, X, y, cv=5, scoring="r2", n_jobs=1
+            )
         cv_r2_mean = float(cv_r2_scores.mean())
         cv_r2_std = float(cv_r2_scores.std())
 
@@ -435,6 +478,7 @@ def run_etl_pipeline(input_file: str | Path, cleaned_output_file: str | Path) ->
     df = handle_missing_values(df)
     df = remove_duplicates(df)
     df = create_ml_features(df)
+    df = add_date_scope_flag(df)
 
     after_rows = len(df)
     missing_values = int(df.isna().sum().sum())
@@ -445,6 +489,9 @@ def run_etl_pipeline(input_file: str | Path, cleaned_output_file: str | Path) ->
     print(f"Lignes avant nettoyage: {before_rows}")
     print(f"Lignes apres nettoyage: {after_rows}")
     print(f"Valeurs manquantes restantes (NaN/NaT): {missing_values}")
+    if "DATE_SCOPE" in df.columns:
+        scope_counts = df["DATE_SCOPE"].value_counts(dropna=False).to_dict()
+        print(f"Repartition DATE_SCOPE: {scope_counts}")
     print(f"Colonnes finales ({len(df.columns)}):")
     print(", ".join(df.columns))
     print(f"Fichier nettoye sauvegarde: {output_path}")
@@ -475,12 +522,14 @@ def main() -> None:
     model_results_output = output_dir / "ml_model_results.json"
     predictions_output = output_dir / "ml_predictions_montant_euro.xlsx"
     anomalies_output = output_dir / "suivi_import_yazaki_with_anomalies.xlsx"
+    out_of_scope_output = output_dir / "suivi_import_yazaki_out_of_scope.xlsx"
 
     cleaned_df = run_etl_pipeline(args.input_file, cleaned_output)
 
     ml_df = prepare_ml_dataset(cleaned_df)
     saved_ml_dataset = write_excel_with_fallback(ml_df, ml_dataset_output)
     print(f"Dataset ML sauvegarde: {saved_ml_dataset}")
+    print(f"Lignes retenues pour ML (IN_SCOPE): {len(ml_df)}")
 
     train_regression_models(
         ml_df,
@@ -495,6 +544,12 @@ def main() -> None:
     anomalies_df = detect_cost_anomalies(cleaned_df)
     saved_anomalies_output = write_excel_with_fallback(anomalies_df, anomalies_output)
     print(f"Fichier avec anomalies sauvegarde: {saved_anomalies_output}")
+
+    if "DATE_SCOPE" in cleaned_df.columns:
+        out_of_scope_df = cleaned_df[cleaned_df["DATE_SCOPE"] == "OUT_OF_SCOPE"].copy()
+        saved_out_scope = write_excel_with_fallback(out_of_scope_df, out_of_scope_output)
+        print(f"Fichier quarantaine hors plage sauvegarde: {saved_out_scope}")
+        print(f"Lignes hors plage (quarantaine): {len(out_of_scope_df)}")
 
     print("\nPipeline termine avec succes.")
 

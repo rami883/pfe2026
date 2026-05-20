@@ -115,17 +115,14 @@ function StockManagerPlaceholderPage() {
   }
 
   return (
-    <main className="portal-shell">
+    <main className="portal-shell stock-manager-shell">
+      <div className="stock-manager-shell__bg" aria-hidden="true" />
       <section className="portal-hero">
         <span className="portal-badge">
           <Boxes size={16} aria-hidden="true" />
           Espace stock
         </span>
         <h1>Formulaire d'arrivee transport</h1>
-        <p>
-          Renseignez les informations de chaque arrivee dans l'interface
-          gestionnaire.
-        </p>
       </section>
 
       <section className="portal-card arrival-card">
@@ -186,7 +183,7 @@ function StockManagerPlaceholderPage() {
             </div>
 
             <div className="field-group">
-              <label htmlFor="transport-type">Type de transport</label>
+              <label htmlFor="transport-type">Type de vehicule</label>
               <select
                 id="transport-type"
                 name="transportType"

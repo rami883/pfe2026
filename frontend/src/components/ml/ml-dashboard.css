@@ -304,6 +304,10 @@
   height: 260px;
 }
 
+.ml-chart-wrap--radar {
+  height: 430px;
+}
+
 .ml-chart-empty {
   height: 200px;
   display: flex;
@@ -312,6 +316,135 @@
   color: #9ca3af;
   font-size: 0.88rem;
   font-style: italic;
+}
+
+/* --- Model comparison table --- */
+.ml-models-wrap {
+  overflow-x: auto;
+  border: 1px solid #f3f4f6;
+  border-radius: 10px;
+}
+
+.ml-models-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.ml-models-table th {
+  padding: 10px 12px;
+  background: #f8f9fb;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.ml-models-table td {
+  padding: 10px 12px;
+  color: #1f2937;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ml-models-row--best td {
+  background: rgba(22, 163, 74, 0.08);
+  font-weight: 700;
+}
+
+.ml-models-best-badge {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  min-height: 20px;
+  padding: 0 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #166534;
+  background: rgba(22, 163, 74, 0.15);
+}
+
+.ml-models-empty {
+  text-align: center;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.ml-model-summary {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.ml-model-summary p {
+  margin: 0;
+  color: #374151;
+  font-size: 0.86rem;
+}
+
+.ml-model-summary strong {
+  color: #111827;
+}
+
+.ml-model-charts {
+  margin-top: 12px;
+}
+
+.ml-chart-wrap--small {
+  height: 230px;
+}
+
+/* --- Collapsible predictions table --- */
+.ml-table-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ml-table-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #374151;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.ml-table-toggle-btn:hover {
+  border-color: #d71920;
+  color: #d71920;
+  background: #fff8f8;
+}
+
+.ml-collapsible {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+
+.ml-collapsible.is-open {
+  max-height: 1400px;
+  opacity: 1;
+}
+
+.ml-collapsible__inner {
+  padding-top: 6px;
 }
 
 /* ─── Tableau des prédictions ─────────────────────────────────────────────── */
@@ -574,6 +707,11 @@
   .ml-refresh-btn {
     align-self: flex-start;
   }
+
+  .ml-table-toggle-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -589,4 +727,79 @@
   .ml-filter-actions {
     grid-column: span 1;
   }
+}
+
+.dashboard-root--dark .ml-header-band {
+  background: linear-gradient(135deg, #111827 0%, #020617 100%);
+  border: 1px solid #253149;
+}
+
+.dashboard-root--dark .ml-kpi-card,
+.dashboard-root--dark .ml-chart-card,
+.dashboard-root--dark .ml-model-summary,
+.dashboard-root--dark .ml-table-card {
+  background: #111827;
+  border-color: #253149;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-root--dark .ml-kpi-card__label,
+.dashboard-root--dark .ml-kpi-card__helper,
+.dashboard-root--dark .ml-chart-subtitle,
+.dashboard-root--dark .ml-table-subtitle,
+.dashboard-root--dark .ml-pagination__info {
+  color: #94a3b8;
+}
+
+.dashboard-root--dark .ml-kpi-card__value,
+.dashboard-root--dark .ml-chart-card h3,
+.dashboard-root--dark .ml-table-header h3,
+.dashboard-root--dark .ml-model-summary strong {
+  color: #f8fafc;
+}
+
+.dashboard-root--dark .ml-filter-item {
+  background: rgba(15, 23, 42, 0.72);
+  border-color: #253149;
+}
+
+.dashboard-root--dark .ml-filter-item span {
+  color: #a7b2c5;
+}
+
+.dashboard-root--dark .ml-filter-item select,
+.dashboard-root--dark .ml-filter-item input,
+.dashboard-root--dark .ml-reset-btn,
+.dashboard-root--dark .ml-export-btn,
+.dashboard-root--dark .ml-table-toggle-btn,
+.dashboard-root--dark .ml-page-btn {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+.dashboard-root--dark .ml-filter-item select option {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.dashboard-root--dark .ml-models-table,
+.dashboard-root--dark .ml-table {
+  background: #0f172a;
+}
+
+.dashboard-root--dark .ml-models-table th,
+.dashboard-root--dark .ml-table th {
+  background: #111827;
+  color: #cbd5e1;
+}
+
+.dashboard-root--dark .ml-models-table td,
+.dashboard-root--dark .ml-table td {
+  border-bottom-color: #253149;
+  color: #dbe4f0;
+}
+
+.dashboard-root--dark .ml-table__row:hover td {
+  background: rgba(30, 41, 59, 0.76);
 }

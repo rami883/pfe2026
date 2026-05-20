@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Bar } from 'react-chartjs-2'
 import {
   Activity,
   AlertTriangle,
@@ -14,21 +15,22 @@ import SectionCard from '../dashboard/components/SectionCard'
 import ErrorChart from '../components/ml/ErrorChart'
 import MLFilters from '../components/ml/MLFilters'
 import MLKpiCard from '../components/ml/MLKpiCard'
+import ModelRadarChart from '../components/ml/ModelRadarChart'
 import PredictionsTable from '../components/ml/PredictionsTable'
 import RealVsPredictedChart from '../components/ml/RealVsPredictedChart'
 import StatusDistributionChart from '../components/ml/StatusDistributionChart'
 import TransporteurErrorChart from '../components/ml/TransporteurErrorChart'
-import TrendChart from '../components/ml/TrendChart'
 import { formatCurrency, formatInteger, formatPercent } from '../components/ml/mlFormatters'
 import {
   getMLByCarrier,
   getMLFilterOptions,
+  getMLModelComparison,
   getMLMetrics,
   getMLPredictions,
-  getMLTrend,
   getStatusDistribution,
   getTopErrors,
 } from '../services/mlApi'
+import '../dashboard/chartSetup'
 import '../components/ml/ml-dashboard.css'
 
 // ─── État initial ─────────────────────────────────────────────────────────────
@@ -42,14 +44,41 @@ function createDefaultFilters() {
   }
 }
 
+class PredictionsTableErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error) {
+    console.error('Predictions table render error:', error)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <p className="dashboard-error" role="alert">
+          Impossible d'afficher le tableau de predictions pour une ou plusieurs lignes invalides.
+        </p>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 // ─── Composant ────────────────────────────────────────────────────────────────
 function MLDashboard() {
   // KPIs + données graphiques globaux
   const [metrics, setMetrics] = useState(null)
   const [topErrors, setTopErrors] = useState([])
   const [statusDistribution, setStatusDistribution] = useState([])
-  const [trend, setTrend] = useState([])
   const [carriers, setCarriers] = useState([])
+  const [modelComparison, setModelComparison] = useState([])
 
   // Options dropdowns (depuis API — toutes les valeurs, pas juste la page courante)
   const [filterOptions, setFilterOptions] = useState({
@@ -63,6 +92,7 @@ function MLDashboard() {
   const [predictionsPayload, setPredictionsPayload] = useState(null)
   const [filters, setFilters] = useState(createDefaultFilters)
   const [page, setPage] = useState(1)
+  const [isPredictionsTableOpen, setIsPredictionsTableOpen] = useState(false)
 
   // États de chargement
   const [isLoadingKpis, setIsLoadingKpis] = useState(true)
@@ -77,21 +107,28 @@ function MLDashboard() {
     setIsLoadingKpis(true)
     setKpiError('')
     try {
-      const [metricsData, errorsData, statusData, trendData, carriersData, optionsData] =
+      const [
+        metricsData,
+        errorsData,
+        statusData,
+        carriersData,
+        optionsData,
+        modelComparisonData,
+      ] =
         await Promise.all([
           getMLMetrics(),
           getTopErrors(20),
           getStatusDistribution(),
-          getMLTrend(),
           getMLByCarrier(),
           getMLFilterOptions(),
+          getMLModelComparison(),
         ])
 
       setMetrics(metricsData)
       setTopErrors(Array.isArray(errorsData?.items) ? errorsData.items : [])
       setStatusDistribution(Array.isArray(statusData?.items) ? statusData.items : [])
-      setTrend(Array.isArray(trendData?.items) ? trendData.items : [])
       setCarriers(Array.isArray(carriersData?.items) ? carriersData.items : [])
+      setModelComparison(Array.isArray(modelComparisonData?.items) ? modelComparisonData.items : [])
       setFilterOptions({
         transporteurs: optionsData?.transporteurs || [],
         fournisseurs: optionsData?.fournisseurs || [],
@@ -118,7 +155,12 @@ function MLDashboard() {
       setIsLoadingPredictions(true)
       setPredictionsError('')
       try {
-        const response = await getMLPredictions({ ...filters, page, pageSize: 100 })
+        const response = await getMLPredictions({
+          ...filters,
+          all: 'true',
+          page: 1,
+          pageSize: 10000,
+        })
         if (mounted) setPredictionsPayload(response)
       } catch (error) {
         if (mounted) {
@@ -151,6 +193,10 @@ function MLDashboard() {
     setPage(1)
   }
 
+  function handleTogglePredictionsTable() {
+    setIsPredictionsTableOpen((prev) => !prev)
+  }
+
   // ── Formatage date d'entraînement ─────────────────────────────────────────
   const trainedAtLabel = useMemo(() => {
     if (!metrics?.trainedAt) return '-'
@@ -160,6 +206,88 @@ function MLDashboard() {
       year: 'numeric',
     })
   }, [metrics?.trainedAt])
+
+  function formatScore(value, digits = 4) {
+    const parsed = Number(value)
+    if (!Number.isFinite(parsed)) return '-'
+    return parsed.toFixed(digits)
+  }
+
+  const bestModelByRmse = useMemo(
+    () => (modelComparison.length ? modelComparison[0] : null),
+    [modelComparison],
+  )
+
+  const mostStableModel = useMemo(() => {
+    if (!modelComparison.length) return null
+    return [...modelComparison].sort((a, b) => Number(a.cvR2Std) - Number(b.cvR2Std))[0]
+  }, [modelComparison])
+
+  const modelComparisonChartData = useMemo(() => {
+    const labels = modelComparison.map((row) => row.model)
+    return {
+      labels,
+      rmse: {
+        labels,
+        datasets: [
+          {
+            label: 'RMSE',
+            data: modelComparison.map((row) => Number(row.rmse) || 0),
+            backgroundColor: labels.map((_, index) =>
+              index === 0 ? '#b51218' : 'rgba(215, 25, 32, 0.45)',
+            ),
+            borderRadius: 8,
+          },
+        ],
+      },
+      mae: {
+        labels,
+        datasets: [
+          {
+            label: 'MAE',
+            data: modelComparison.map((row) => Number(row.mae) || 0),
+            backgroundColor: labels.map((_, index) =>
+              index === 0 ? '#d71920' : 'rgba(215, 25, 32, 0.30)',
+            ),
+            borderRadius: 8,
+          },
+        ],
+      },
+    }
+  }, [modelComparison])
+
+  const modelComparisonChartOptions = useMemo(
+    () => ({
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1f2937',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
+          callbacks: {
+            label(context) {
+              const value = Number(context.parsed.y)
+              return Number.isFinite(value) ? value.toFixed(4) : '-'
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#6b7280', maxRotation: 0 },
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(148, 163, 184, 0.18)' },
+          ticks: { color: '#6b7280' },
+        },
+      },
+    }),
+    [],
+  )
 
   // ─── Rendu ────────────────────────────────────────────────────────────────
   return (
@@ -263,6 +391,83 @@ function MLDashboard() {
         />
       </section>
 
+      <SectionCard title="Comparaison des modeles">
+        <div className="ml-model-summary">
+          <p>
+            Meilleur modele (RMSE): <strong>{bestModelByRmse?.model || '-'}</strong>
+            {bestModelByRmse ? ` — RMSE ${formatScore(bestModelByRmse.rmse)}` : ''}
+          </p>
+          <p>
+            Modele le plus stable (CV R2 Std min):{' '}
+            <strong>{mostStableModel?.model || '-'}</strong>
+            {mostStableModel ? ` — CV R2 Std ${formatScore(mostStableModel.cvR2Std)}` : ''}
+          </p>
+        </div>
+
+        <div className="ml-models-wrap">
+          <table className="ml-models-table">
+            <thead>
+              <tr>
+                <th>Modele</th>
+                <th>MAE</th>
+                <th>RMSE</th>
+                <th>R2</th>
+                <th>CV R2 Mean</th>
+                <th>CV R2 Std</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!modelComparison.length ? (
+                <tr>
+                  <td colSpan={6} className="ml-models-empty">
+                    Aucune comparaison disponible.
+                  </td>
+                </tr>
+              ) : null}
+
+              {modelComparison.map((row, index) => {
+                const isBest = index === 0
+                return (
+                  <tr key={row.model} className={isBest ? 'ml-models-row--best' : ''}>
+                    <td>
+                      {row.model}
+                      {isBest ? <span className="ml-models-best-badge">Best</span> : null}
+                    </td>
+                    <td>{formatScore(row.mae)}</td>
+                    <td>{formatScore(row.rmse)}</td>
+                    <td>{formatScore(row.r2)}</td>
+                    <td>{formatScore(row.cvR2Mean)}</td>
+                    <td>{formatScore(row.cvR2Std)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <section className="ml-charts-grid ml-charts-grid--2col ml-model-charts">
+          <div className="ml-chart-card">
+            <h3>Comparaison RMSE</h3>
+            <div className="ml-chart-wrap ml-chart-wrap--small">
+              <Bar
+                data={modelComparisonChartData.rmse}
+                options={modelComparisonChartOptions}
+              />
+            </div>
+          </div>
+
+          <div className="ml-chart-card">
+            <h3>Comparaison MAE</h3>
+            <div className="ml-chart-wrap ml-chart-wrap--small">
+              <Bar
+                data={modelComparisonChartData.mae}
+                options={modelComparisonChartOptions}
+              />
+            </div>
+          </div>
+        </section>
+      </SectionCard>
+
       {/* ─── Filtres ─────────────────────────────────────────────────────── */}
       <SectionCard title="Filtres des prédictions">
         <MLFilters
@@ -294,24 +499,57 @@ function MLDashboard() {
       </section>
 
       {/* ─── Graphique — Tendance temporelle (pleine largeur) ────────────── */}
-      <TrendChart trend={trend} />
+      <ModelRadarChart models={modelComparison} />
 
       {/* ─── Tableau des prédictions ─────────────────────────────────────── */}
-      {isLoadingPredictions ? (
-        <SectionCard title="Chargement">
-          <p className="dashboard-muted">Chargement des prédictions…</p>
-        </SectionCard>
-      ) : (
-        <PredictionsTable
-          rows={predictions}
-          page={Number(predictionsPayload?.page || 1)}
-          totalPages={Number(predictionsPayload?.totalPages || 1)}
-          total={Number(predictionsPayload?.total || 0)}
-          onPageChange={setPage}
-        />
-      )}
+      <SectionCard title="Tableau detaille des predictions">
+        <div className="ml-table-toggle-row">
+          <p className="dashboard-muted">
+            Le tableau complet peut etre affiche uniquement quand vous en avez besoin.
+          </p>
+          <button
+            type="button"
+            className="ml-table-toggle-btn"
+            onClick={handleTogglePredictionsTable}
+            aria-expanded={isPredictionsTableOpen}
+          >
+            {isPredictionsTableOpen ? (
+              <>
+                <span aria-hidden="true">▲</span>
+                Masquer le tableau
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true">▼</span>
+                Afficher le tableau
+              </>
+            )}
+          </button>
+        </div>
+
+        <div className={`ml-collapsible ${isPredictionsTableOpen ? 'is-open' : ''}`}>
+          <div className="ml-collapsible__inner">
+            {isPredictionsTableOpen ? (
+              isLoadingPredictions ? (
+                <p className="dashboard-muted">Chargement des predictions...</p>
+              ) : (
+                <PredictionsTableErrorBoundary>
+                  <PredictionsTable
+                    rows={predictions}
+                    page={Number(predictionsPayload?.page || 1)}
+                    totalPages={Number(predictionsPayload?.totalPages || 1)}
+                    total={Number(predictionsPayload?.total || 0)}
+                    onPageChange={setPage}
+                  />
+                </PredictionsTableErrorBoundary>
+              )
+            ) : null}
+          </div>
+        </div>
+      </SectionCard>
     </div>
   )
 }
 
 export default MLDashboard
+

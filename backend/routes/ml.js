@@ -1,4 +1,6 @@
 import express from 'express'
+import fs from 'node:fs'
+import path from 'node:path'
 import { protect } from '../middleware/auth.js'
 import MLModelMetrics from '../models/MLModelMetrics.js'
 import MLPredictionResult from '../models/MLPredictionResult.js'
@@ -35,6 +37,21 @@ function parsePagination(query) {
   const page = Math.max(1, Math.floor(Number(query.page) || 1))
   const pageSize = Math.min(500, Math.max(1, Math.floor(Number(query.pageSize) || 100)))
   return { page, pageSize }
+}
+
+function resolveProjectArtifactPath(fileName) {
+  const candidates = [
+    path.resolve(process.cwd(), fileName),
+    path.resolve(process.cwd(), '..', fileName),
+  ]
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate
+    }
+  }
+
+  return ''
 }
 
 function buildPredictionsFilter(query) {
@@ -134,6 +151,46 @@ router.get('/metrics', protect, requireMLAccess, async (_req, res) => {
     return res.status(200).json(metrics)
   } catch (error) {
     console.error('ML metrics error:', error)
+    return res.status(500).json({ message: 'Erreur serveur.' })
+  }
+})
+
+/**
+ * GET /api/ml/model-comparison
+ * Retourne la comparaison des modeles testes pendant le training ML.
+ */
+router.get('/model-comparison', protect, requireMLAccess, async (_req, res) => {
+  try {
+    const resultsPath = resolveProjectArtifactPath('ml_model_results.json')
+    if (!resultsPath) {
+      return res.status(404).json({
+        message: 'Resultats ML introuvables.',
+      })
+    }
+
+    const payload = JSON.parse(fs.readFileSync(resultsPath, 'utf-8'))
+    const metrics = Array.isArray(payload?.metrics) ? payload.metrics : []
+
+    const items = metrics
+      .map((row) => ({
+        model: String(row.MODEL || ''),
+        mae: Number(row.MAE),
+        rmse: Number(row.RMSE),
+        r2: Number(row.R2),
+        cvR2Mean: Number(row.CV_R2_MEAN),
+        cvR2Std: Number(row.CV_R2_STD),
+      }))
+      .filter((row) => row.model)
+      .sort((a, b) => a.rmse - b.rmse)
+
+    return res.status(200).json({
+      bestModel: String(payload?.best_model || items[0]?.model || ''),
+      rowsUsedForTraining: Number(payload?.rows_used_for_training || 0),
+      generatedAtUtc: String(payload?.generated_at_utc || ''),
+      items,
+    })
+  } catch (error) {
+    console.error('ML model comparison error:', error)
     return res.status(500).json({ message: 'Erreur serveur.' })
   }
 })

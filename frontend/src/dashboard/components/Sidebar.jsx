@@ -1,4 +1,5 @@
 import { LogOut } from 'lucide-react'
+import receptionLogo from '../../assets/logo-reception.png'
 
 function Sidebar({
   items,
@@ -10,12 +11,16 @@ function Sidebar({
 }) {
   return (
     <aside className="dashboard-sidebar">
-      <div className="dashboard-logo">
-        <span className="dashboard-logo__mark">Y</span>
-        <div>
-          <strong>Yazaki Reception</strong>
-          <p>Executive BI Suite</p>
-        </div>
+      <div className="dashboard-logo dashboard-logo--reception">
+        <span className="dashboard-logo__media" aria-hidden="true">
+          <img
+            src={receptionLogo}
+            alt=""
+            className="dashboard-logo__image"
+            loading="lazy"
+            decoding="async"
+          />
+        </span>
       </div>
 
       <nav className="dashboard-nav" aria-label="Dashboard menu">

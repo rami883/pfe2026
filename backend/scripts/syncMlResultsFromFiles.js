@@ -41,6 +41,18 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+function toOptionalIntInRange(value, min, max) {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed)) {
+    return null
+  }
+  const rounded = Math.floor(parsed)
+  if (rounded < min || rounded > max) {
+    return null
+  }
+  return rounded
+}
+
 async function run() {
   const predictionsPath = resolveProjectFile('ml_predictions_montant_euro.xlsx')
   const resultsPath = resolveProjectFile('ml_model_results.json')
@@ -92,6 +104,8 @@ async function run() {
         designation: String(row.DESIGNATION || '').trim().toUpperCase() || 'UNKNOWN',
         nbr_colis: toNumber(row.NBR_COLIS, 0),
         delai_jours: toNumber(row.IMPORT_DELAY_DAYS, 0),
+        reception_year: toOptionalIntInRange(row.RECEPTION_YEAR, 1900, 3000),
+        reception_month: toOptionalIntInRange(row.RECEPTION_MONTH, 1, 12),
         montant_reel: montantReel,
         montant_predit: montantPredit,
         erreur_absolue: erreurAbsolue,
