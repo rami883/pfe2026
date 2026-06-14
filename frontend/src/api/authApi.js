@@ -5,7 +5,7 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 const AUTH_TOKEN_STORAGE_KEY = 'pfe_auth_token'
-const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:5000'
+const LOCAL_DEV_API_BASE_URL = 'http://127.0.0.1:5001'
 
 function ensureLeadingSlash(path) {
   if (!path) {
@@ -172,12 +172,12 @@ export async function apiRequest(path, options = {}) {
         )
       } catch (_fallbackError) {
         throw new Error(
-          'Serveur injoignable. Verifiez que le backend tourne sur le port 5000.',
+          'Serveur injoignable. Verifiez que le backend tourne sur le port 5001.',
         )
       }
     } else {
       throw new Error(
-        'Serveur injoignable. Verifiez que le backend tourne sur le port 5000.',
+        'Serveur injoignable. Verifiez que le backend tourne sur le port 5001.',
       )
     }
   }

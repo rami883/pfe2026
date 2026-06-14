@@ -11,7 +11,7 @@ const router = express.Router();
 
 const ALLOWED_REGISTER_ROLES = new Set(["gestionnaire", "directeur"]);
 
-function buildUserPayload(user) {
+function buildUserPayload(user) { //recherche user par id
   return {
     id: user._id,
     username: user.username,
@@ -21,11 +21,11 @@ function buildUserPayload(user) {
     isRejected: Boolean(user.isRejected),
   };
 }
-
+//function create JWT
 function generateToken(id) {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 }
-
+// function wait rst 
 async function findApprovableUserById(userId) {
   if (!userId) {
     return null;
@@ -100,7 +100,7 @@ router.post("/register", async (req, res) => {
     return res.status(500).json({ message: "Erreur serveur." });
   }
 });
-
+//recep idientifiant et MDp
 router.post("/login", async (req, res) => {
   const { email, identifier, password } = req.body;
   const emailSource = identifier || email;
@@ -111,7 +111,7 @@ router.post("/login", async (req, res) => {
         .status(400)
         .json({ message: "Veuillez completer tous les champs obligatoires." });
     }
-
+//normaliser les identifiants de yazaki
     const normalizedIdentifier = normalizeYazakiIdentifierInput(emailSource, {
       allowFullEmail: true,
     });
@@ -123,7 +123,7 @@ router.post("/login", async (req, res) => {
         }),
       });
     }
-
+//chercher utulisateur par email normalisé(f mongodb et comparer)
     const user = await User.findOne({ email: normalizedIdentifier.email });
 
     if (!user || !(await user.matchPassword(password))) {

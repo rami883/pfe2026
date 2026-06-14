@@ -29,8 +29,8 @@ import '../dashboard/dashboard.css'
 const BASE_NAV_ITEMS = [
   { id: 'executive', label: 'Tableau de bord', icon: LayoutDashboard },
   { id: 'suppliers', label: 'Performance des fournisseurs', icon: Truck },
-  { id: 'operations', label: 'Suivi des rÃ©ceptions', icon: Activity },
-  { id: 'analytics', label: 'Analyse PrÃ©dictive', icon: LineChart },
+  { id: 'operations', label: 'Suivi des r\u00e9ceptions', icon: Activity },
+  { id: 'analytics', label: 'Analyse Pr\u00e9dictive', icon: LineChart },
   { id: 'reports', label: 'Rapports', icon: FileText },
   { id: 'alerts', label: 'Alertes', icon: BellRing },
 ]
@@ -64,11 +64,11 @@ const PAGE_CONTENT = {
     subtitle: '',
   },
   operations: {
-    title: 'Suivi des rÃ©ceptions',
+    title: 'Suivi des r\u00e9ceptions',
     subtitle: '',
   },
   analytics: {
-    title: 'Analyse PrÃ©dictive',
+    title: 'Analyse Pr\u00e9dictive',
     subtitle: '',
   },
   reports: {
@@ -252,6 +252,7 @@ function DirectorPlaceholderPage() {
             visibleRows.map((row) => row.id).filter(Boolean),
           )
           setAlerts(visibleRows)
+          setUnreadAlerts(visibleRows.length)
           return
         }
 
@@ -260,9 +261,10 @@ function DirectorPlaceholderPage() {
         )
 
         if (newRows.length) {
-          setUnreadAlerts((current) => current + newRows.length)
           setRefreshTick((current) => current + 1)
         }
+
+        setUnreadAlerts(visibleRows.length)
 
         setAlerts((currentAlerts) => {
           const merged = [...visibleRows, ...currentAlerts]
@@ -337,14 +339,10 @@ function DirectorPlaceholderPage() {
 
   function handleNavChange(nextView) {
     setActiveView(nextView)
-    if (nextView === 'alerts') {
-      setUnreadAlerts(0)
-    }
   }
 
   function handleOpenAlerts() {
     setIsAlertsModalOpen(true)
-    setUnreadAlerts(0)
   }
 
   function handleCloseAlertsModal() {
@@ -481,6 +479,7 @@ function DirectorPlaceholderPage() {
       onLogout={handleLogout}
       isLoggingOut={isLoggingOut}
       userEmail={user?.email}
+      user={user}
       title={pageMeta.title}
       subtitle={pageMeta.subtitle}
       filters={filters}
@@ -519,7 +518,7 @@ function DirectorPlaceholderPage() {
             <header className="dashboard-alert-modal__header">
               <div>
                 <p className="dashboard-alert-modal__eyebrow">Notifications</p>
-                <h2 id="dashboard-alert-modal-title">Alertes rÃ©ceptions</h2>
+                <h2 id="dashboard-alert-modal-title">Alertes receptions</h2>
               </div>
               <button
                 type="button"
@@ -533,7 +532,7 @@ function DirectorPlaceholderPage() {
 
             {!alerts.length ? (
               <div className="dashboard-alert-modal__empty">
-                Aucune nouvelle rÃ©ception dÃ©tectÃ©e.
+                Aucune nouvelle r\u00e9ception d\u00e9tect\u00e9e.
               </div>
             ) : (
               <div className="dashboard-alert-modal__list">

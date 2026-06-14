@@ -376,18 +376,71 @@
 
 .ml-model-summary {
   display: grid;
-  gap: 4px;
-  margin-bottom: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.ml-model-summary p {
+.ml-model-summary-card {
+  min-width: 0;
+  border-radius: 8px;
+  background: #fce8e9;
+  padding: 12px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.ml-model-summary-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ml-model-summary-card__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: #f7cfd2;
+  color: #d71920;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.ml-model-summary-card__label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ml-model-summary-card__model {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ml-model-summary-card__score {
   margin: 0;
-  color: #374151;
-  font-size: 0.86rem;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.1;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
-.ml-model-summary strong {
-  color: #111827;
+.ml-model-summary-card__score span {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .ml-model-charts {
@@ -736,7 +789,6 @@
 
 .dashboard-root--dark .ml-kpi-card,
 .dashboard-root--dark .ml-chart-card,
-.dashboard-root--dark .ml-model-summary,
 .dashboard-root--dark .ml-table-card {
   background: #111827;
   border-color: #253149;
@@ -753,9 +805,27 @@
 
 .dashboard-root--dark .ml-kpi-card__value,
 .dashboard-root--dark .ml-chart-card h3,
-.dashboard-root--dark .ml-table-header h3,
-.dashboard-root--dark .ml-model-summary strong {
+.dashboard-root--dark .ml-table-header h3 {
   color: #f8fafc;
+}
+
+.dashboard-root--dark .ml-model-summary-card {
+  background: rgba(127, 29, 29, 0.22);
+}
+
+.dashboard-root--dark .ml-model-summary-card__icon {
+  background: rgba(127, 29, 29, 0.34);
+  color: #fca5a5;
+}
+
+.dashboard-root--dark .ml-model-summary-card__model,
+.dashboard-root--dark .ml-model-summary-card__score {
+  color: #f8fafc;
+}
+
+.dashboard-root--dark .ml-model-summary-card__label,
+.dashboard-root--dark .ml-model-summary-card__score span {
+  color: #a7b2c5;
 }
 
 .dashboard-root--dark .ml-filter-item {

@@ -4,7 +4,7 @@ import '../chartSetup'
 import ChartCard from '../components/ChartCard'
 import SectionCard from '../components/SectionCard'
 import { getOperationsMonitoring } from '../../api/dashboardApi'
-
+//downlload PNG
 function downloadChartAsPng(chartRef, fileName) {
   const chartInstance = chartRef?.current
   if (!chartInstance) {
@@ -352,7 +352,7 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
   }
 
   return (
-    <>
+    <>  
       <section className="chart-grid chart-grid--operations">
         <ChartCard
           title="Receptions et palettes par date d'arrivee"

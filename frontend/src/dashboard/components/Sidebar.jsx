@@ -1,13 +1,9 @@
-import { LogOut } from 'lucide-react'
 import receptionLogo from '../../assets/logo-reception.png'
 
 function Sidebar({
   items,
   activeItem,
   onItemChange,
-  onLogout,
-  isLoggingOut,
-  userEmail,
 }) {
   return (
     <aside className="dashboard-sidebar">
@@ -47,18 +43,6 @@ function Sidebar({
         })}
       </nav>
 
-      <div className="dashboard-sidebar__footer">
-        <p className="dashboard-user-email">{userEmail || 'directeur@yazaki.com'}</p>
-        <button
-          type="button"
-          className="dashboard-logout-btn"
-          onClick={onLogout}
-          disabled={isLoggingOut}
-        >
-          <LogOut size={16} aria-hidden="true" />
-          {isLoggingOut ? 'Deconnexion...' : 'Se deconnecter'}
-        </button>
-      </div>
     </aside>
   )
 }

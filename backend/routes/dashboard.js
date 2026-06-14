@@ -560,7 +560,7 @@ router.get('/suppliers/options', protect, requireDashboardAccess, async (req, re
     return res.status(500).json({ message: 'Erreur serveur.' })
   }
 })
-
+//receptions des donneé pour les dashbord (formulaire ges)
 router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res) => {
   try {
     const arrivalDate = String(req.body.arrivalDate || '').trim()
@@ -588,7 +588,7 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
         .status(400)
         .json({ message: 'Veuillez completer correctement tous les champs obligatoires.' })
     }
-
+//enregistrement dans mongo si toute cordonnée correcte
     const created = await DashboardData.create({
       Record_No: trailerPlate,
       Day: deriveDayFromDate(arrivalDateAsDate),
@@ -606,7 +606,7 @@ router.post('/receptions', protect, requireReceptionWriteAccess, async (req, res
       Created_By_Email: req.user?.email || '',
       Created_By_Id: String(req.user?._id || ''),
     })
-    return res.status(201).json({
+    return res.status(201).json({//reponse pour le front koolchy mrgl
       message: 'Reception enregistree avec succes.',
       reception: {
         id: String(created._id),
@@ -632,7 +632,7 @@ router.get('/alerts/receptions', protect, requireDashboardAccess, async (req, re
     const limit = Number.isFinite(limitRaw)
       ? Math.min(Math.max(Math.floor(limitRaw), 1), 100)
       : 30
-
+//voir les nouvelles receptions
     const rows = await DashboardData.find({
       Created_By_Id: { $exists: true, $nin: ['', null] },
     })
@@ -1088,9 +1088,10 @@ router.get('/operations', protect, requireDashboardAccess, async (req, res) => {
           },
         },
       ]),
-
+//une agregation pour calculer les arrivées par heure, en extrayant 
+// l'heure de la date d'arrivée et en groupant par heure
       DashboardData.aggregate([
-        getBaseAddFieldsStage(),
+        getBaseAddFieldsStage(),//Cette fonction prépare les champs avant les calculs.
         getArrivalHourStage(),
         { $match: baseMatch },
         { $match: { arrivalHour: { $ne: null, $gte: 0, $lte: 23 } } },

@@ -1,15 +1,5 @@
-/**
- * ETL — Charge les prédictions ML et les métriques du modèle dans MongoDB.
- *
- * Usage :
- *   node ETL/loadMLPredictionsToMongo.js --replace   ← vide puis recharge (défaut)
- *   node ETL/loadMLPredictionsToMongo.js --append    ← ajoute sans supprimer
- *
- * Fichiers sources attendus (relatifs à la racine du projet) :
- *   ../ml_predictions_montant_euro.xlsx   → collection MLPredictionResult
- *   ../ml_model_results.json              → collection MLModelMetrics
- */
 
+//charger RST du ML dans mongodb
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -21,7 +11,7 @@ import XLSX from 'xlsx'
 import MLModelMetrics from '../models/MLModelMetrics.js'
 import MLPredictionResult from '../models/MLPredictionResult.js'
 
-// ─── Résolution des chemins ──────────────────────────────────────────────────
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..')
@@ -29,7 +19,7 @@ const BACKEND_ROOT = path.resolve(__dirname, '..')
 
 dotenv.config({ path: path.join(BACKEND_ROOT, '.env') })
 
-// ─── Configuration ───────────────────────────────────────────────────────────
+//les fichiers entrée 
 const BATCH_SIZE = Number(process.env.ETL_ML_BATCH_SIZE || 500)
 const PREDICTIONS_FILE = path.join(PROJECT_ROOT, 'ml_predictions_montant_euro.xlsx')
 const METRICS_FILE = path.join(PROJECT_ROOT, 'ml_model_results.json')
@@ -37,16 +27,14 @@ const METRICS_FILE = path.join(PROJECT_ROOT, 'ml_model_results.json')
 const args = process.argv.slice(2)
 const MODE = args.includes('--append') ? 'append' : 'replace'
 
-// ─── Seuils de classification des prédictions ────────────────────────────────
+
 const STATUT_SEUILS = {
   BONNE: 15,    // erreur < 15% → Bonne prediction
   MOYENNE: 25,  // erreur < 25% → Prediction moyenne
   // sinon        → A verifier
 }
 
-/**
- * Classifie le statut d'une prédiction selon son taux d'erreur.
- */
+
 function classifyStatut(errorPct) {
   const pct = Number(errorPct)
   if (!Number.isFinite(pct)) return 'A verifier'
@@ -55,10 +43,7 @@ function classifyStatut(errorPct) {
   return 'A verifier'
 }
 
-/**
- * Convertit une ligne Excel en document MLPredictionResult.
- * Tolère les deux casses de noms de colonnes (MAJUSCULE ou minuscule).
- */
+
 function mapRowToPrediction(row, modelName) {
   const get = (...keys) => {
     for (const key of keys) {
@@ -92,10 +77,7 @@ function mapRowToPrediction(row, modelName) {
   }
 }
 
-/**
- * Charge les métriques du modèle dans MLModelMetrics.
- * Toujours remplace l'unique document de métriques (on veut le plus récent).
- */
+
 async function loadMetrics() {
   if (!fs.existsSync(METRICS_FILE)) {
     console.warn(`[WARN] Fichier métriques introuvable: ${METRICS_FILE} — ignoré.`)
@@ -108,7 +90,7 @@ async function loadMetrics() {
   const bestMetrics = json.best_model_metrics || {}
   const totalRows = Number(json.rows_used_for_training || 0)
 
-  // Supprime l'ancien document de métriques avant d'insérer le nouveau
+  //
   await MLModelMetrics.deleteMany({})
 
   const doc = await MLModelMetrics.create({
@@ -124,9 +106,9 @@ async function loadMetrics() {
   return json.best_model || 'UNKNOWN'
 }
 
-/**
- * Charge les prédictions depuis le fichier Excel dans MLPredictionResult.
- */
+
+ // Charge les prédictions depuis le fichier Excel dans MLPredictionResult.
+ 
 async function loadPredictions(modelName) {
   if (!fs.existsSync(PREDICTIONS_FILE)) {
     throw new Error(`Fichier prédictions introuvable: ${PREDICTIONS_FILE}`)
@@ -158,7 +140,7 @@ async function loadPredictions(modelName) {
     console.log(`   Inséré: ${inserted}/${documents.length}`)
   }
 
-  // Calcul de la moyenne des erreurs % pour mettre à jour MLModelMetrics
+  
   const [agg] = await MLPredictionResult.aggregate([
     { $group: { _id: null, avgErrPct: { $avg: '$erreur_pourcentage' } } },
   ])
@@ -180,7 +162,7 @@ async function loadPredictions(modelName) {
   return inserted
 }
 
-// ─── Point d'entrée ──────────────────────────────────────────────────────────
+
 async function run() {
   if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI manquant dans le fichier .env du Backend/')
@@ -190,7 +172,7 @@ async function run() {
   console.log('  ETL ML — Chargement des prédictions dans MongoDB')
   console.log(`  Mode: ${MODE.toUpperCase()}`)
   console.log('══════════════════════════════════════════════════\n')
-
+//connecter a mongodb
   await mongoose.connect(process.env.MONGO_URI)
   console.log('🔗 Connecté à MongoDB\n')
 

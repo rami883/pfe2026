@@ -7,7 +7,7 @@ import MLModelMetrics from '../models/MLModelMetrics.js'
 import MLPredictionResult from '../models/MLPredictionResult.js'
 
 dotenv.config()
-
+//lit les fichier de RT de prediction et de metrique de model
 function resolveProjectFile(fileName) {
   const candidates = [
     path.resolve(process.cwd(), fileName),
@@ -21,7 +21,7 @@ function resolveProjectFile(fileName) {
   }
   return ''
 }
-
+//classer les prediction selon pourcentage mt3 erreur
 function normalizeStatus(errorPctRaw) {
   const errorPct = Number(errorPctRaw)
   if (!Number.isFinite(errorPct)) {

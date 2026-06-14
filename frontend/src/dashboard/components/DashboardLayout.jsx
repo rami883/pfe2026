@@ -8,6 +8,7 @@ function DashboardLayout({
   onLogout,
   isLoggingOut,
   userEmail,
+  user,
   title,
   subtitle,
   filters,
@@ -33,9 +34,6 @@ function DashboardLayout({
         items={navItems}
         activeItem={activeNavItem}
         onItemChange={onNavChange}
-        onLogout={onLogout}
-        isLoggingOut={isLoggingOut}
-        userEmail={userEmail}
       />
 
       <div className="dashboard-main">
@@ -53,6 +51,10 @@ function DashboardLayout({
             vehicleTypeOptions={vehicleTypeOptions}
             notificationCount={notificationCount}
             onOpenAlerts={onOpenAlerts}
+            user={user}
+            userEmail={userEmail}
+            onLogout={onLogout}
+            isLoggingOut={isLoggingOut}
             isDarkMode={isDarkMode}
             onToggleDarkMode={onToggleDarkMode}
           />

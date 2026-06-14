@@ -5,7 +5,7 @@ import { useAuth } from '../auth/useAuth'
 import { createReception } from '../api/dashboardApi'
 import { getRoleLabel } from '../config/roles'
 
-const INITIAL_FORM = {
+const INITIAL_FORM = {//initalisation mt3 les champs
   arrivalDate: '',
   arrivalTime: '',
   trailerPlate: '',
@@ -15,13 +15,13 @@ const INITIAL_FORM = {
   palletsCount: '',
   position: '',
 }
-
+//correction les champs
 function sanitizeText(value) {
   return String(value || '')
     .trim()
     .replace(/\s+/g, ' ')
 }
-
+//normalisation des champs poour le payload back
 function buildReceptionPayload(formData) {
   const arrivalDate = String(formData.arrivalDate || '').trim()
   const arrivalTime = String(formData.arrivalTime || '').trim()
@@ -60,7 +60,7 @@ function buildReceptionPayload(formData) {
 function StockManagerPlaceholderPage() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
-  const [formData, setFormData] = useState(INITIAL_FORM)
+  const [formData, setFormData] = useState(INITIAL_FORM)//enregister les valeur entrer de la formulaire dans formdata
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -76,7 +76,7 @@ function StockManagerPlaceholderPage() {
       setIsLoggingOut(false)
     }
   }
-
+//il fonctionne pour les changement
   function handleFieldChange(event) {
     const { name, value } = event.target
 
@@ -87,10 +87,10 @@ function StockManagerPlaceholderPage() {
     setIsSubmitted(false)
     setSubmitError('')
   }
-
+//button envoyer formulaire
   async function handleSubmit(event) {
     event.preventDefault()
-    const normalized = buildReceptionPayload(formData)
+    const normalized = buildReceptionPayload(formData)//normaliser les champs et construire le payload pour backend
     if (!normalized.isValid) {
       setSubmitError(
         'Veuillez verifier le format des champs (heure HH:mm, palettes > 0, textes valides).',

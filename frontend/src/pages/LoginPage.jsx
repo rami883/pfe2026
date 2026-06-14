@@ -14,7 +14,7 @@ function LoginPage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { login } = useAuth()
-  const [formData, setFormData] = useState(initialFormState)
+  const [formData, setFormData] = useState(initialFormState)//enregistrer les donne form dans formdata
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -44,7 +44,7 @@ function LoginPage() {
       [name]: nextValue,
     }))
   }
-
+//afficher le mot passe
   function handleTogglePasswordVisibility(event) {
     event.preventDefault()
     setIsPasswordVisible((current) => !current)
@@ -127,7 +127,7 @@ function LoginPage() {
                   name="identifier"
                   type="text"
                   placeholder="prenom.nom"
-                  autoComplete="username"
+                  autoComplete="off"
                   value={formData.identifier}
                   onChange={handleChange}
                   disabled={isSubmitting}
@@ -152,7 +152,7 @@ function LoginPage() {
                   name="password"
                   type={isPasswordVisible ? 'text' : 'password'}
                   placeholder="Saisissez votre mot de passe"
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={handleChange}
                   disabled={isSubmitting}

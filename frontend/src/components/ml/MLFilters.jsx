@@ -7,6 +7,12 @@ function MLFilters({
   typeTransportOptions = [],
   statusOptions = [],
 }) {
+  function formatTransporteurOption(option) {
+    return String(option || '').trim().toLowerCase() === 'vectoriels'
+      ? 'VECTORYS'
+      : option
+  }
+
   return (
     <section className="ml-filters">
       <label className="ml-filter-item">
@@ -18,7 +24,7 @@ function MLFilters({
           <option value="">Tous</option>
           {transporteurOptions.map((option) => (
             <option key={option} value={option}>
-              {option}
+              {formatTransporteurOption(option)}
             </option>
           ))}
         </select>
@@ -81,7 +87,7 @@ function MLFilters({
 
       <div className="ml-filter-actions">
         <button type="button" className="ml-reset-btn" onClick={onReset}>
-          Reinitialiser
+          Réinitialiser
         </button>
       </div>
     </section>
@@ -89,4 +95,3 @@ function MLFilters({
 }
 
 export default MLFilters
-

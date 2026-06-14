@@ -1,14 +1,14 @@
 import express from 'express'
-import fs from 'node:fs'
+import fs from 'node:fs'//lire ficher json
 import path from 'node:path'
 import { protect } from '../middleware/auth.js'
-import MLModelMetrics from '../models/MLModelMetrics.js'
-import MLPredictionResult from '../models/MLPredictionResult.js'
+import MLModelMetrics from '../models/MLModelMetrics.js'//appel  results des models (les metrics)
+import MLPredictionResult from '../models/MLPredictionResult.js'//appel resultat predicitons
 
 const router = express.Router()
 const ALLOWED_ROLES = new Set(['admin', 'directeur'])
 
-// ─── Middleware d'accès ML ───────────────────────────────────────────────────
+//fonction verifier role acceés 
 function requireMLAccess(req, res, next) {
   if (!req.user || !ALLOWED_ROLES.has(req.user.role)) {
     return res.status(403).json({ message: 'Access denied' })
@@ -16,15 +16,12 @@ function requireMLAccess(req, res, next) {
   return next()
 }
 
-// ─── Utilitaires ─────────────────────────────────────────────────────────────
+
 function escapeRegex(value) {
   return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/**
- * Classifie le statut selon le taux d'erreur.
- * Source unique de vérité — seuils identiques à l'ETL Python.
- */
+//classer les prediction selon erreur %
 function normalizeStatusByError(errorPercentRaw) {
   const errorPercent = Number(errorPercentRaw)
   if (!Number.isFinite(errorPercent)) return 'A verifier'
@@ -53,7 +50,7 @@ function resolveProjectArtifactPath(fileName) {
 
   return ''
 }
-
+//filtrage 
 function buildPredictionsFilter(query) {
   const filter = {}
   const transporteur = String(query.transporteur || '').trim()
@@ -80,11 +77,7 @@ function buildPredictionsFilter(query) {
   return filter
 }
 
-/**
- * Calcule les métriques live depuis MongoDB.
- * Combine les données de MLModelMetrics (depuis l'ETL Python)
- * avec les agrégations en temps réel sur MLPredictionResult.
- */
+//calcul KPIs
 async function calculateLiveMetrics() {
   const [totalPredictions, aggregation, toCheckCount, latestMetricDoc] = await Promise.all([
     MLPredictionResult.countDocuments(),
@@ -139,12 +132,7 @@ async function calculateLiveMetrics() {
   }
 }
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/ml/metrics
- * KPIs du modèle ML (MAE, RMSE, R², total prédictions, etc.)
- */
 router.get('/metrics', protect, requireMLAccess, async (_req, res) => {
   try {
     const metrics = await calculateLiveMetrics()
@@ -155,10 +143,7 @@ router.get('/metrics', protect, requireMLAccess, async (_req, res) => {
   }
 })
 
-/**
- * GET /api/ml/model-comparison
- * Retourne la comparaison des modeles testes pendant le training ML.
- */
+
 router.get('/model-comparison', protect, requireMLAccess, async (_req, res) => {
   try {
     const resultsPath = resolveProjectArtifactPath('ml_model_results.json')
@@ -308,10 +293,7 @@ router.get('/top-errors', protect, requireMLAccess, async (req, res) => {
   }
 })
 
-/**
- * GET /api/ml/status-distribution
- * Répartition des prédictions par statut (pour le donut chart).
- */
+
 router.get('/status-distribution', protect, requireMLAccess, async (_req, res) => {
   try {
     const rows = await MLPredictionResult.aggregate([

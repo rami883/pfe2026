@@ -31,14 +31,14 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
 
-TARGET_COLUMN = "MONTANT_EN_EURO"
+TARGET_COLUMN = "MONTANT_EN_EURO"#variable cible pour le ML(objectif )
 DATE_COLUMNS = ["PICK_UP_DATE", "DATE_RECEPTION"]
 NUMERIC_COLUMNS = ["NBR_COLIS", TARGET_COLUMN]
 DEFAULT_INPUT_FILE = r"C:\Users\medra\Downloads\SUIVI IMPORT YAZAKI  2025+2026.xlsx"
 SCOPE_START_YEAR = 2025
 SCOPE_END_YEAR = 2026
 
-
+#extracte des donneés puis il retourné sous forme de dataframe
 def extract_excel(file_path: str | Path) -> pd.DataFrame:
     """Read Excel file into a DataFrame."""
     path = Path(file_path)
@@ -46,7 +46,7 @@ def extract_excel(file_path: str | Path) -> pd.DataFrame:
         raise FileNotFoundError(f"Fichier introuvable: {path}")
     return pd.read_excel(path, engine="openpyxl")
 
-
+#sauvergarder le DATAF dans f xls
 def write_excel_with_fallback(df: pd.DataFrame, output_path: str | Path) -> Path:
     """
     Write Excel file.
@@ -272,7 +272,7 @@ def prepare_ml_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
     return ml_df
 
-
+#creations des models
 def train_regression_models(
     ml_df: pd.DataFrame,
     model_output_path: str | Path = "best_import_cost_model.pkl",
@@ -284,7 +284,7 @@ def train_regression_models(
         raise ValueError(f"Colonne cible manquante: {TARGET_COLUMN}")
     if len(ml_df) < 5:
         raise ValueError("Pas assez de lignes pour entrainer les modeles (minimum 5).")
-
+#separation des features et de la target x est variables explicatives et y la variable a predire
     X = ml_df.drop(columns=[TARGET_COLUMN])
     y = ml_df[TARGET_COLUMN]
 
@@ -302,11 +302,12 @@ def train_regression_models(
         raise ValueError("Aucune colonne exploitable pour le training.")
 
     preprocessor = ColumnTransformer(transformers=transformers)
-
+# separation des données en train et test pour évaluer
+#  les modèles sur des données non vues pendant l'entraînement, avec 20% des données pour le test et une graine aléatoire fixe pour la reproductibilité
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
     )
-
+#creations des models
     models = {
         "Linear Regression": LinearRegression(),
         "Random Forest Regressor": RandomForestRegressor(
@@ -319,7 +320,7 @@ def train_regression_models(
 
     results: list[dict[str, float | str]] = []
     fitted_pipelines: dict[str, Pipeline] = {}
-
+#entr et evalution pour chaque model et calcul les metrique
     for model_name, estimator in models.items():
         pipeline = Pipeline(
             steps=[("preprocessor", preprocessor), ("model", estimator)]
@@ -331,19 +332,19 @@ def train_regression_models(
         rmse = float(np.sqrt(mean_squared_error(y_test, y_pred)))
         r2 = r2_score(y_test, y_pred)
 
-        # Cross-validation 5-fold for robust metrics (avoids single-split bias)
+        #comparaison des models
         try:
             cv_r2_scores = cross_val_score(
                 pipeline, X, y, cv=5, scoring="r2", n_jobs=-1
             )
         except Exception:
-            # Fallback for environments where process-based parallel CV is blocked.
+            
             cv_r2_scores = cross_val_score(
                 pipeline, X, y, cv=5, scoring="r2", n_jobs=1
             )
         cv_r2_mean = float(cv_r2_scores.mean())
         cv_r2_std = float(cv_r2_scores.std())
-
+#sauvergarder les rst pour chaque model
         results.append(
             {
                 "MODEL": model_name,
@@ -357,11 +358,11 @@ def train_regression_models(
         fitted_pipelines[model_name] = pipeline
 
     results_df = pd.DataFrame(results).sort_values(by="RMSE", ascending=True).reset_index(
-        drop=True
+        drop=True #meilleur model selon RMSE
     )
-    best_model_name = str(results_df.iloc[0]["MODEL"])
+    best_model_name = str(results_df.iloc[0]["MODEL"])#ihot ahsn model selon rmse f tableau
 
-    # Retrain best model on full dataset before saving
+    #i3wd entrainii ahsn model sur tout datasetmodel 
     best_pipeline = fitted_pipelines[best_model_name]
     best_pipeline.fit(X, y)
 
@@ -372,6 +373,7 @@ def train_regression_models(
         "target_column": TARGET_COLUMN,
         "trained_at_utc": datetime.now(timezone.utc).isoformat(),
     }
+    #sauvergarder le meilleur modéle
     joblib.dump(model_payload, Path(model_output_path))
 
     predictions = best_pipeline.predict(X)
@@ -463,26 +465,26 @@ def detect_cost_anomalies(df: pd.DataFrame) -> pd.DataFrame:
     print(f"Nombre d'anomalies detectees: {anomaly_count}")
 
     return detected
-
+##la fonction mt3 ETL ml transform
 
 def run_etl_pipeline(input_file: str | Path, cleaned_output_file: str | Path) -> pd.DataFrame:
     """Run complete ETL preprocessing pipeline and save cleaned file."""
-    raw_df = extract_excel(input_file)
+    raw_df = extract_excel(input_file)#exttraction des doneés xls puis metter en dataframe
     before_rows = len(raw_df)
 
-    df = clean_column_names(raw_df)
-    df = drop_useless_columns(df)
+    df = clean_column_names(raw_df)##metter les noms de colonnes en MJ
+    df = drop_useless_columns(df)#ifs5 colonnes vides
     df = clean_text_columns(df)
     df = convert_dates(df)
     df = convert_numeric_columns(df)
     df = handle_missing_values(df)
-    df = remove_duplicates(df)
-    df = create_ml_features(df)
+    df = remove_duplicates(df)#suppression des doublons
+    df = create_ml_features(df)#creations des feautures
     df = add_date_scope_flag(df)
 
     after_rows = len(df)
     missing_values = int(df.isna().sum().sum())
-
+#load
     output_path = write_excel_with_fallback(df, Path(cleaned_output_file))
 
     print("\n--- ETL SUMMARY ---")

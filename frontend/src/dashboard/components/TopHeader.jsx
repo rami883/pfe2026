@@ -1,9 +1,11 @@
+import { useEffect, useRef, useState } from 'react'
 import {
   Bell,
   Building2,
   CalendarDays,
   ChevronDown,
   Filter,
+  LogOut,
   MapPin,
   Moon,
   RefreshCw,
@@ -25,9 +27,55 @@ function TopHeader({
   vehicleTypeOptions,
   notificationCount = 0,
   onOpenAlerts,
+  user,
+  userEmail,
+  onLogout,
+  isLoggingOut = false,
   isDarkMode = false,
   onToggleDarkMode,
 }) {
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const userMenuRef = useRef(null)
+  const fullName = getDisplayName(user)
+  const roleLabel = getRoleLabel(user?.role)
+  const initials = getInitials(fullName)
+  const email = user?.email || userEmail || 'directeur@yazaki.com'
+
+  useEffect(() => {
+    if (!isUserMenuOpen) {
+      return undefined
+    }
+
+    function handleOutsideClick(event) {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setIsUserMenuOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleOutsideClick)
+    window.addEventListener('keydown', handleEscape)
+
+    return () => {
+      window.removeEventListener('mousedown', handleOutsideClick)
+      window.removeEventListener('keydown', handleEscape)
+    }
+  }, [isUserMenuOpen])
+
+  function handleUserMenuToggle() {
+    setIsUserMenuOpen((current) => !current)
+  }
+
+  function handleLogoutClick() {
+    setIsUserMenuOpen(false)
+    onLogout?.()
+  }
+
   return (
     <header className="dashboard-header">
       <div className="dashboard-header__top">
@@ -67,8 +115,49 @@ function TopHeader({
             )}
           </button>
 
-          <div className="dashboard-avatar" aria-label="Current user">
-            Directeur
+          <div className="dashboard-user-menu" ref={userMenuRef}>
+            <button
+              type="button"
+              className="dashboard-user-chip"
+              onClick={handleUserMenuToggle}
+              aria-haspopup="menu"
+              aria-expanded={isUserMenuOpen}
+            >
+              <span className="dashboard-user-chip__avatar">{initials}</span>
+              <span className="dashboard-user-chip__identity">
+                <strong>{fullName}</strong>
+                <small>{roleLabel}</small>
+              </span>
+              <ChevronDown
+                size={15}
+                aria-hidden="true"
+                className={`dashboard-user-chip__chevron ${
+                  isUserMenuOpen ? 'is-open' : ''
+                }`}
+              />
+            </button>
+
+            {isUserMenuOpen ? (
+              <div className="dashboard-user-dropdown" role="menu">
+                <div className="dashboard-user-dropdown__header">
+                  <span className="dashboard-user-chip__avatar">{initials}</span>
+                  <span>
+                    <strong>{fullName}</strong>
+                    <small>{email}</small>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="dashboard-user-dropdown__logout"
+                  onClick={handleLogoutClick}
+                  disabled={isLoggingOut}
+                  role="menuitem"
+                >
+                  <LogOut size={16} aria-hidden="true" />
+                  {isLoggingOut ? 'Déconnexion...' : 'Se déconnecter'}
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -87,7 +176,7 @@ function TopHeader({
             </div>
             <button type="button" className="dashboard-clear-btn" onClick={onResetFilters}>
               <RefreshCw size={14} aria-hidden="true" />
-              Reinitialiser
+              Réinitialiser
             </button>
           </div>
 
@@ -218,6 +307,48 @@ function TopHeader({
       ) : null}
     </header>
   )
+}
+
+function getDisplayName(user) {
+  const name = String(user?.username || user?.name || '').trim()
+  if (name) {
+    return name
+  }
+
+  const emailPrefix = String(user?.email || '')
+    .split('@')[0]
+    .replace(/[._-]+/g, ' ')
+    .trim()
+
+  return emailPrefix || 'Utilisateur'
+}
+
+function getRoleLabel(role) {
+  const normalized = String(role || '').trim().toLowerCase()
+  if (normalized === 'admin') {
+    return 'Administrateur'
+  }
+  if (normalized === 'gestionnaire') {
+    return 'Gestionnaire'
+  }
+  return 'Directeur'
+}
+
+function getInitials(fullName) {
+  const words = String(fullName || '')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  if (!words.length) {
+    return '??'
+  }
+
+  if (words.length === 1) {
+    return words[0].slice(0, 2).toUpperCase()
+  }
+
+  return `${words[0][0] || ''}${words[1][0] || ''}`.toUpperCase()
 }
 
 export default TopHeader
