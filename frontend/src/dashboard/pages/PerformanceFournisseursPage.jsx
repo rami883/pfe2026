@@ -89,7 +89,7 @@ function pickTopByMetric(rows, metricKey, topN, sortOrder) {
   }))
 }
 
-function SupplierPerformancePage({ filters, refreshTick = 0 }) {
+function PerformanceFournisseursPage({ filters, refreshTick = 0 }) {
   const [payload, setPayload] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -351,4 +351,4 @@ function SupplierPerformancePage({ filters, refreshTick = 0 }) {
   )
 }
 
-export default SupplierPerformancePage
+export default PerformanceFournisseursPage

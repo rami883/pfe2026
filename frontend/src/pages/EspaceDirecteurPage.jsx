@@ -19,11 +19,11 @@ import {
 } from '../api/dashboardApi'
 import DashboardLayout from '../dashboard/components/DashboardLayout'
 import SectionCard from '../dashboard/components/SectionCard'
-import ExecutiveOverviewPage from '../dashboard/pages/ExecutiveOverviewPage'
-import OperationsMonitoringPage from '../dashboard/pages/OperationsMonitoringPage'
-import ReportsPage from '../dashboard/pages/ReportsPage'
-import SupplierPerformancePage from '../dashboard/pages/SupplierPerformancePage'
-import MLDashboard from './MLDashboard'
+import TableauDeBordPage from '../dashboard/pages/TableauDeBordPage'
+import SuiviReceptionsPage from '../dashboard/pages/SuiviReceptionsPage'
+import RapportsPage from '../dashboard/pages/RapportsPage'
+import PerformanceFournisseursPage from '../dashboard/pages/PerformanceFournisseursPage'
+import AnalysePredictivePage from './AnalysePredictivePage'
 import '../dashboard/dashboard.css'
 
 const BASE_NAV_ITEMS = [
@@ -123,7 +123,7 @@ function getSavedDarkModePreference() {
   return window.localStorage.getItem(DASHBOARD_THEME_STORAGE_KEY) === 'dark'
 }
 
-function DirectorPlaceholderPage() {
+function EspaceDirecteurPage() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
 
@@ -407,19 +407,19 @@ function DirectorPlaceholderPage() {
 
   const renderedPage = useMemo(() => {
     if (activeView === 'executive') {
-      return <ExecutiveOverviewPage filters={filters} refreshTick={refreshTick} />
+      return <TableauDeBordPage filters={filters} refreshTick={refreshTick} />
     }
 
     if (activeView === 'suppliers') {
-      return <SupplierPerformancePage filters={filters} refreshTick={refreshTick} />
+      return <PerformanceFournisseursPage filters={filters} refreshTick={refreshTick} />
     }
 
     if (activeView === 'operations') {
-      return <OperationsMonitoringPage filters={filters} refreshTick={refreshTick} />
+      return <SuiviReceptionsPage filters={filters} refreshTick={refreshTick} />
     }
 
     if (activeView === 'analytics') {
-      return <MLDashboard />
+      return <AnalysePredictivePage />
     }
 
     if (activeView === 'alerts') {
@@ -458,7 +458,7 @@ function DirectorPlaceholderPage() {
     }
 
     if (activeView === 'reports') {
-      return <ReportsPage filters={filters} refreshTick={refreshTick} />
+      return <RapportsPage filters={filters} refreshTick={refreshTick} />
     }
 
     return (
@@ -568,6 +568,6 @@ function DirectorPlaceholderPage() {
   )
 }
 
-export default DirectorPlaceholderPage
+export default EspaceDirecteurPage
 
 

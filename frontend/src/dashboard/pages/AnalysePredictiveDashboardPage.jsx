@@ -24,7 +24,7 @@ function formatInt(value) {
   return parsed.toLocaleString('fr-FR', { maximumFractionDigits: 0 })
 }
 
-function AnalyticsPage({ refreshTick = 0 }) {
+function AnalysePredictiveDashboardPage({ refreshTick = 0 }) {
   const [payload, setPayload] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -195,4 +195,4 @@ function AnalyticsPage({ refreshTick = 0 }) {
   )
 }
 
-export default AnalyticsPage
+export default AnalysePredictiveDashboardPage

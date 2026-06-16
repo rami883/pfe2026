@@ -209,7 +209,7 @@ function formatIsoWeekRangeFr(year, week) {
   return `${formatDayMonthFr(monday)} - ${formatDayMonthFr(sunday)} ${year}`
 }
 
-function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
+function TableauDeBordPage({ filters, refreshTick = 0 }) {
   const [payload, setPayload] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -751,4 +751,4 @@ function ExecutiveOverviewPage({ filters, refreshTick = 0 }) {
   )
 }
 
-export default ExecutiveOverviewPage
+export default TableauDeBordPage

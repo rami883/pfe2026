@@ -5,7 +5,29 @@ import { getOperationsMonitoring } from '../../api/dashboardApi'
 import DataTable from '../components/DataTable'
 import SectionCard from '../components/SectionCard'
 
-function ReportsPage({ filters, refreshTick = 0 }) {
+function formatReportDate(value) {
+  if (!value) return '-'
+
+  const rawValue = String(value).trim()
+  if (!rawValue) return '-'
+
+  const isoDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+  const parsedDate = isoDateOnly
+    ? new Date(`${rawValue}T00:00:00`)
+    : new Date(rawValue)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return rawValue
+  }
+
+  return parsedDate.toLocaleDateString('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
+function RapportsPage({ filters, refreshTick = 0 }) {
   const [rows, setRows] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -42,7 +64,13 @@ function ReportsPage({ filters, refreshTick = 0 }) {
 
   const tableColumns = useMemo(
     () => [
-      { key: 'arrivalDate', header: "Date d'arrivee" },
+      {
+        key: 'arrivalDate',
+        header: "Date d'arrivee",
+        render(value) {
+          return formatReportDate(value)
+        },
+      },
       { key: 'supplier', header: 'Fournisseur' },
       { key: 'arrivalTime', header: "Heure d'arrivee" },
       { key: 'pallets', header: 'Palettes' },
@@ -84,7 +112,7 @@ function ReportsPage({ filters, refreshTick = 0 }) {
 
     // Préparer les données pour l'export
     const exportData = rows.map((row) => ({
-      "Date d'arrivee": row.arrivalDate || '-',
+      "Date d'arrivee": formatReportDate(row.arrivalDate),
       'Fournisseur': row.supplier || '-',
       "Heure d'arrivee": row.arrivalTime || '-',
       'Palettes': row.pallets || '-',
@@ -144,4 +172,4 @@ function ReportsPage({ filters, refreshTick = 0 }) {
   )
 }
 
-export default ReportsPage
+export default RapportsPage

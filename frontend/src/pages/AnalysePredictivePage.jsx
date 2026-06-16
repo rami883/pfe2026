@@ -100,7 +100,7 @@ const MODEL_COMPARISON_FALLBACK = [
   },
 ]
 
-function MLDashboard() {
+function AnalysePredictivePage() {
   // KPIs + données graphiques globaux
   const [metrics, setMetrics] = useState(null)
   const [topErrors, setTopErrors] = useState([])
@@ -654,5 +654,5 @@ function MLDashboard() {
   )
 }
 
-export default MLDashboard
+export default AnalysePredictivePage
 

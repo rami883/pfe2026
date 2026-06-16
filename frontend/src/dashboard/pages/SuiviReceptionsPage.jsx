@@ -75,7 +75,7 @@ function doughnutOptions() {
   }
 }
 
-function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
+function SuiviReceptionsPage({ filters, refreshTick = 0 }) {
   const [payload, setPayload] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
@@ -425,4 +425,4 @@ function OperationsMonitoringPage({ filters, refreshTick = 0 }) {
   )
 }
 
-export default OperationsMonitoringPage
+export default SuiviReceptionsPage

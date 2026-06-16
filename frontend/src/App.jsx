@@ -3,12 +3,12 @@ import './App.css'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
 import ProtectedRoute from './components/ProtectedRoute'
 import PublicOnlyRoute from './components/PublicOnlyRoute'
-import AdminApprovalsPage from './pages/AdminApprovalsPage'
-import DirectorPlaceholderPage from './pages/DirectorPlaceholderPage'
+import AdministrationComptesPage from './pages/AdministrationComptesPage'
+import EspaceDirecteurPage from './pages/EspaceDirecteurPage'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
 import RegisterPage from './pages/RegisterPage'
-import StockManagerPlaceholderPage from './pages/StockManagerPlaceholderPage'
+import EspaceGestionnairePage from './pages/EspaceGestionnairePage'
 
 function App() {
   return (
@@ -36,7 +36,7 @@ function App() {
           path="/admin/dashboard"
           element={<Navigate to="/admin/approvals" replace />}
         />
-        <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
+        <Route path="/admin/approvals" element={<AdministrationComptesPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRole="directeur" />}>
@@ -44,7 +44,7 @@ function App() {
           path="/directeur"
           element={<Navigate to="/directeur/dashboard" replace />}
         />
-        <Route path="/directeur/dashboard" element={<DirectorPlaceholderPage />} />
+        <Route path="/directeur/dashboard" element={<EspaceDirecteurPage />} />
       </Route>
 
       <Route element={<ProtectedRoute allowedRole="gestionnaire" />}>
@@ -54,7 +54,7 @@ function App() {
         />
         <Route
           path="/gestionnaire-stock/dashboard"
-          element={<StockManagerPlaceholderPage />}
+          element={<EspaceGestionnairePage />}
         />
       </Route>
 

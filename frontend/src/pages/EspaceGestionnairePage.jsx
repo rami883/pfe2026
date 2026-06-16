@@ -57,7 +57,7 @@ function buildReceptionPayload(formData) {
   }
 }
 
-function StockManagerPlaceholderPage() {
+function EspaceGestionnairePage() {
   const navigate = useNavigate()
   const { logout, user } = useAuth()
   const [formData, setFormData] = useState(INITIAL_FORM)//enregister les valeur entrer de la formulaire dans formdata
@@ -275,4 +275,4 @@ function StockManagerPlaceholderPage() {
   )
 }
 
-export default StockManagerPlaceholderPage
+export default EspaceGestionnairePage

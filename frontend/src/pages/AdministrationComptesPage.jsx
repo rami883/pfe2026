@@ -20,7 +20,7 @@ import {
 import { useAuth } from '../auth/useAuth'
 import { getRoleLabel } from '../config/roles'
 
-function AdminApprovalsPage() {
+function AdministrationComptesPage() {
   const navigate = useNavigate()
   const { logout, user: currentUser } = useAuth()
   const [pendingUsers, setPendingUsers] = useState([])
@@ -351,4 +351,4 @@ function AdminApprovalsPage() {
   )
 }
 
-export default AdminApprovalsPage
+export default AdministrationComptesPage
